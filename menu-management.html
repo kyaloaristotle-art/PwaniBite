@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Management | PwaniBite Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+</head>
+<body>
+
+    <!-- Admin Navigation -->
+    <nav class="admin-navbar">
+
+        <div class="admin-logo">
+
+            <img src="Images/Logo.jpg"
+                 alt="PwaniBite Logo">
+
+            <div>
+                <span>PwaniBite</span>
+                <small>Admin Dashboard</small>
+            </div>
+
+        </div>
+
+
+        <div class="admin-user">
+
+            <span>👨‍💼</span>
+
+            <div>
+                <strong>Administrator</strong>
+                <small>Canteen Manager</small>
+            </div>
+
+        </div>
+
+    </nav>
+
+    <!-- Dashboard Layout -->
+    <div class="dashboard">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+
+            <h3>Dashboard</h3>
+
+            <ul>
+
+                <li>
+                    <a href="admin.html">
+                        🏠 Dashboard
+                    </a>
+                </li>
+
+                <li>
+                    <a href="#orders">
+                        🛒 Orders
+                    </a>
+                </li>
+
+                <li>
+                    <a href="menu-management.html" class="active">
+                        🍛 Menu
+                    </a>
+                </li>
+
+                <li>
+                    <a href="delivery-portal.html">
+                        🚚 Delivery
+                    </a>
+                </li>
+
+                <li>
+                    <a href="index.html">
+                        🌐 View Website
+                    </a>
+                </li>
+
+            </ul>
+
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+
+            <!-- Page Header -->
+            <div class="dashboard-header">
+
+                <div>
+                    <h1>Menu Management</h1>
+                    <p>Add, edit, or remove food items from the menu</p>
+                </div>
+
+                <button class="dashboard-btn" onclick="showAddMenuModal()">
+                    + Add New Item
+                </button>
+
+            </div>
+
+            <!-- Menu Items -->
+            <section class="dashboard-card">
+
+                <div class="card-header">
+
+                    <div>
+                        <h2>Current Menu Items</h2>
+                        <p>Manage available food items</p>
+                    </div>
+
+                </div>
+
+                <div id="menu-items-list">
+                    <!-- Menu items will be populated by JavaScript -->
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- Add/Edit Menu Modal -->
+    <div id="menu-modal" class="order-confirmation-modal" style="display: none;">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h2 id="modal-title">Add New Menu Item</h2>
+
+                <button class="close-modal" onclick="closeMenuModal()" aria-label="Close modal">&times;</button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <form id="menu-form">
+
+                    <input type="hidden" id="menu-item-id">
+
+                    <div class="form-group">
+
+                        <label for="menu-name">Food Name</label>
+
+                        <input
+                            type="text"
+                            id="menu-name"
+                            name="name"
+                            placeholder="e.g., Pilau"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="menu-description">Description</label>
+
+                        <textarea
+                            id="menu-description"
+                            name="description"
+                            rows="3"
+                            placeholder="Describe the food item"
+                            required
+                        ></textarea>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="menu-price">Price (KSh)</label>
+
+                        <input
+                            type="number"
+                            id="menu-price"
+                            name="price"
+                            placeholder="e.g., 100"
+                            required
+                            min="0"
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="menu-image">Image Filename</label>
+
+                        <input
+                            type="text"
+                            id="menu-image"
+                            name="image"
+                            placeholder="e.g., Pilau.jpg"
+                            required
+                        >
+
+                        <small>Image should be in the Images folder</small>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="menu-category">Category</label>
+
+                        <select id="menu-category" name="category" required>
+
+                            <option value="main">Main Course</option>
+
+                            <option value="side">Side Dish</option>
+
+                            <option value="drink">Drink</option>
+
+                            <option value="snack">Snack</option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="menu-available">
+                            <input
+                                type="checkbox"
+                                id="menu-available"
+                                name="available"
+                                checked
+                            >
+                            Available
+                        </label>
+
+                    </div>
+
+                    <button type="submit" class="auth-submit">
+                        Save Menu Item
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer>
+
+        <p>
+            &copy; 2026 PwaniBite Admin Dashboard
+        </p>
+
+        <p>
+            Food Management • Orders • Delivery
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let currentLoadedItems = [];
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (typeof isAuthenticated === 'function' && typeof isAdmin === 'function') {
+                if (!isAuthenticated() || !isAdmin()) {
+                    alert('Access restricted: Administrator privileges required.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+            }
+            await loadMenuItems();
+            initializeMenuForm();
+        });
+
+        async function loadMenuItems() {
+            const menuList = document.getElementById('menu-items-list');
+            menuList.innerHTML = '<p style="text-align: center; color: #666; padding: 30px;">Loading menu items...</p>';
+
+            try {
+                if (typeof getFood === 'function') {
+                    const res = await getFood();
+                    if (res && res.food) {
+                        currentLoadedItems = res.food;
+                    }
+                }
+            } catch (err) {
+                console.warn('API getFood fallback to local:', err.message);
+                currentLoadedItems = JSON.parse(localStorage.getItem('pwaniBiteMenu')) || [];
+            }
+
+            if (currentLoadedItems.length === 0) {
+                menuList.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No menu items found</p>';
+                return;
+            }
+
+            let html = '';
+            currentLoadedItems.forEach(item => {
+                const id = item.food_id || item.id;
+                const name = item.food_name || item.name;
+                const price = parseFloat(item.price);
+                const isAvailable = item.availability !== false && item.availability !== 0;
+
+                html += `
+                    <div class="menu-item-card">
+                        <div class="menu-item-info">
+                            <h3>${name}</h3>
+                            <p>${item.description || ''}</p>
+                            <p><strong>Price:</strong> KSh ${price}</p>
+                            <p><strong>Category:</strong> ${item.category || 'General'}</p>
+                            <p><strong>Status:</strong> <span class="${isAvailable ? 'available' : 'unavailable'}">${isAvailable ? 'Available' : 'Unavailable'}</span></p>
+                        </div>
+                        <div class="menu-item-actions">
+                            <button class="btn" onclick="editMenuItem(${id})">Edit</button>
+                            <button class="btn secondary-btn" onclick="deleteMenuItem(${id})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            menuList.innerHTML = html;
+        }
+
+        function initializeMenuForm() {
+            document.getElementById('menu-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const itemId = document.getElementById('menu-item-id').value;
+                const name = document.getElementById('menu-name').value.trim();
+                const description = document.getElementById('menu-description').value.trim();
+                const price = parseFloat(document.getElementById('menu-price').value);
+                const image = document.getElementById('menu-image').value.trim();
+                const category = document.getElementById('menu-category').value;
+                const available = document.getElementById('menu-available').checked;
+
+                const payload = {
+                    food_name: name,
+                    description: description,
+                    price: price,
+                    image: image,
+                    category: category,
+                    availability: available,
+                    stock_quantity: 50
+                };
+
+                const saveBtn = this.querySelector('button[type="submit"]');
+                const origText = saveBtn.textContent;
+                saveBtn.textContent = 'Saving...';
+                saveBtn.disabled = true;
+
+                try {
+                    if (itemId) {
+                        // Update existing food item
+                        if (typeof updateFood === 'function') {
+                            await updateFood(itemId, payload);
+                        }
+                        alert('Menu item updated successfully!');
+                    } else {
+                        // Add new food item
+                        if (typeof addFood === 'function') {
+                            await addFood(payload);
+                        }
+                        alert('Menu item added successfully!');
+                    }
+                } catch (err) {
+                    console.error('Menu save error:', err);
+                    alert('Note: ' + (err.message || 'Operation processed locally'));
+                } finally {
+                    saveBtn.textContent = origText;
+                    saveBtn.disabled = false;
+                    closeMenuModal();
+                    await loadMenuItems();
+                }
+            });
+        }
+
+        function showAddMenuModal() {
+            document.getElementById('modal-title').textContent = 'Add New Menu Item';
+            document.getElementById('menu-item-id').value = '';
+            document.getElementById('menu-form').reset();
+            document.getElementById('menu-modal').style.display = 'flex';
+        }
+
+        function editMenuItem(id) {
+            const item = currentLoadedItems.find(i => (i.food_id || i.id) === id);
+
+            if (item) {
+                document.getElementById('modal-title').textContent = 'Edit Menu Item';
+                document.getElementById('menu-item-id').value = item.food_id || item.id;
+                document.getElementById('menu-name').value = item.food_name || item.name;
+                document.getElementById('menu-description').value = item.description || '';
+                document.getElementById('menu-price').value = item.price;
+                document.getElementById('menu-image').value = item.image || '';
+                document.getElementById('menu-category').value = item.category || 'main';
+                document.getElementById('menu-available').checked = item.availability !== false && item.availability !== 0;
+                document.getElementById('menu-modal').style.display = 'flex';
+            }
+        }
+
+        async function deleteMenuItem(id) {
+            if (confirm('Are you sure you want to delete this menu item?')) {
+                try {
+                    if (typeof deleteFood === 'function') {
+                        await deleteFood(id);
+                    }
+                    alert('Menu item deleted successfully!');
+                } catch (err) {
+                    alert('Failed to delete item: ' + err.message);
+                }
+                await loadMenuItems();
+            }
+        }
+
+        function closeMenuModal() {
+            document.getElementById('menu-modal').style.display = 'none';
+        }
+    </script>
+
+    <style>
+        .menu-item-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-item-info h3 {
+            color: #063b2f;
+            margin-bottom: 10px;
+        }
+
+        .menu-item-info p {
+            color: #555;
+            margin: 5px 0;
+        }
+
+        .menu-item-info .available {
+            color: #065f46;
+            font-weight: bold;
+        }
+
+        .menu-item-info .unavailable {
+            color: #856404;
+            font-weight: bold;
+        }
+
+        .menu-item-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .menu-item-actions .btn {
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+
+        #menu-modal .modal-content {
+            max-width: 500px;
+        }
+
+        #menu-modal .form-group {
+            margin-bottom: 15px;
+        }
+
+        #menu-modal label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #menu-modal input,
+        #menu-modal textarea,
+        #menu-modal select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        #menu-modal small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+
+</body>
+</html>

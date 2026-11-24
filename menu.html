@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Menu | PwaniBite</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+
+</head>
+
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+
+        <div class="logo">
+            <img src="Images/Logo.jpg" alt="PwaniBite Logo">
+            <span>PwaniBite</span>
+        </div>
+
+        <ul class="nav-links" role="menubar">
+            <li role="none"><a href="index.html" role="menuitem">Home</a></li>
+            <li role="none"><a href="menu.html" role="menuitem" aria-current="page">Menu</a></li>
+            <li role="none"><a href="order.html" role="menuitem">Order Food</a></li>
+            <li role="none"><a href="delivery.html" role="menuitem">Delivery</a></li>
+            <li role="none"><a href="about.html" role="menuitem">About</a></li>
+            <li role="none"><a href="contact.html" role="menuitem">Contact</a></li>
+            <li role="none"><a href="feedback.html" role="menuitem">Feedback</a></li>
+            <li role="none"><a href="cart.html" role="menuitem" class="cart-icon-link" aria-label="Shopping cart">
+                <span class="cart-icon-symbol">🛒</span>
+                <span class="cart-count">0</span>
+            </a></li>
+        </ul>
+
+    </nav>
+
+
+    <!-- Menu Header -->
+    <section class="menu-header">
+
+        <h1>Our Menu</h1>
+
+        <p>
+            Delicious and affordable meals for
+            Pwani University comrades.
+        </p>
+
+    </section>
+
+    <!-- Search & Category Filters -->
+    <section class="menu-filter-section">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="menu-search-input" placeholder="Search by name, description, price, or food ID..." aria-label="Search food by name, description, price, or food ID">
+        </div>
+        <div class="category-pills">
+            <button class="category-pill active" data-category="all">All Items</button>
+            <button class="category-pill" data-category="Main Course">Main Course</button>
+            <button class="category-pill" data-category="Side Dish">Side Dish</button>
+            <button class="category-pill" data-category="Offer">Offers</button>
+            <button class="category-pill" data-category="Beverage">Beverages</button>
+        </div>
+    </section>
+
+    <!-- Food Menu -->
+    <section class="menu-section">
+
+        <div class="menu-container" id="menu-cards-container">
+
+
+            <!-- Food 1 -->
+            <div class="menu-card">
+
+                <img src="Images/Pilau.jpg" alt="Pilau">
+
+                <div class="menu-info">
+
+                    <h2>Pilau</h2>
+
+                    <p>
+                        Spiced rice served with a tasty
+                        accompaniment.
+                    </p>
+
+                    <h3>KSh 100</h3>
+
+                    <a href="order.html" class="menu-btn">
+                        Order Now
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <!-- Food 2 -->
+            <div class="menu-card">
+
+                <img src="Images/Beans.jpg" alt="Beans">
+
+                <div class="menu-info">
+
+                    <h2>Beans</h2>
+
+                    <p>
+                        Delicious beans served with
+                        your choice of accompaniment.
+                    </p>
+
+                    <h3>KSh 20</h3>
+
+                    <a href="order.html" class="menu-btn">
+                        Order Now
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <!-- Food 3 -->
+            <div class="menu-card">
+
+                <img src="Images/Chapo Offer.jpg" alt="Chapati and Beans">
+
+                <div class="menu-info">
+
+                    <h2>Chapati Offer</h2>
+
+                    <p>
+                        Soft chapati served with
+                        tasty beans.
+                        At an offer
+                    </p>
+
+                    <h3>KSh 50</h3>
+
+                    <a href="order.html" class="menu-btn">
+                        Order Now
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <!-- Food 4 -->
+            <div class="menu-card">
+
+                <img src="Images/Rice beans.jpg" alt="Rice and Beans">
+
+                <div class="menu-info">
+
+                    <h2>Rice & Beans</h2>
+
+                    <p>
+                        Fresh rice served with
+                        delicious beans stew.
+                    </p>
+
+                    <h3>KSh 60</h3>
+
+                    <a href="order.html" class="menu-btn">
+                        Order Now
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <!-- Food 5 -->
+            <div class="menu-card">
+
+                <img src="Images/Ugali.jpg" alt="Ugali">
+
+                <div class="menu-info">
+
+                    <h2>Ugali</h2>
+
+                    <p>
+                        Soft white delicious ugali
+                        served with your choice companion
+                    </p>
+
+                    <h3>KSh 30</h3>
+
+                    <a href="order.html" class="menu-btn">
+                        Order Now
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <!-- Food 6 -->
+            <div class="menu-card">
+
+                <img src="Images/Cabbage.jpg" alt="Fresh Juice">
+
+                <div class="menu-info">
+
+                    <h2>Fresh Juice</h2>
+
+                    <p>
+                        Refreshing fruit juice prepared
+                        fresh for you.
+                    </p>
+
+                    <h3>KSh 80</h3>
+
+                    <a href="order.html" class="menu-btn">
+                        Order Now
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- Call To Action -->
+    <section class="cta">
+
+        <h2>Found Something You Like?</h2>
+
+        <p>
+            Place your order and we'll deliver it
+            to your hostel room.
+        </p>
+
+        <a href="order.html" class="btn">
+            Order Food Now
+        </a>
+
+    </section>
+
+
+    <!-- Footer -->
+    <footer>
+
+        <p>
+            &copy; 2026 PwaniBite | Pwani University Canteen
+        </p>
+
+        <p>
+            Order Food • Hostel Delivery • Happy Comrades
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let allFoodItems = [];
+            let currentCategory = 'all';
+            let searchQuery = '';
+
+            const container = document.getElementById('menu-cards-container');
+            const searchInput = document.getElementById('menu-search-input');
+            const pills = document.querySelectorAll('.category-pill');
+
+            // Default image mappings
+            const defaultImages = {
+                'Pilau': 'Images/Pilau.jpg',
+                'Beans': 'Images/Beans.jpg',
+                'Chapati Offer': 'Images/Chapo Offer.jpg',
+                'Rice & Beans': 'Images/Rice beans.jpg',
+                'Ugali': 'Images/Ugali.jpg',
+                'Fresh Juice': 'Images/Cabbage.jpg',
+                'Chicken': 'Images/Pilau.jpg',
+                'Chips': 'Images/Rice beans.jpg'
+            };
+
+            async function loadDynamicMenu() {
+                try {
+                    if (typeof getFood === 'function') {
+                        const res = await getFood();
+                        if (res && res.food && res.food.length > 0) {
+                            allFoodItems = res.food;
+                            renderMenu();
+                        }
+                    }
+                } catch (e) {
+                    console.log('Using default static menu items:', e.message);
+                }
+            }
+
+            function renderMenu() {
+                if (allFoodItems.length === 0) return;
+
+                const filtered = allFoodItems.filter(item => {
+                    const matchCategory = (currentCategory === 'all') || 
+                        (item.category && item.category.toLowerCase() === currentCategory.toLowerCase());
+                    const price = Number(item.price);
+                    const searchablePrice = Number.isFinite(price)
+                        ? `${price} ${price.toFixed(2)} ${price.toFixed(0)}`
+                        : String(item.price || '');
+                    const searchableFields = [
+                        item.food_name,
+                        item.description,
+                        searchablePrice,
+                        item.food_id,
+                        item.id
+                    ].filter(value => value !== null && value !== undefined).join(' ').toLowerCase();
+                    const matchSearch = !searchQuery || searchableFields.includes(searchQuery);
+                    return matchCategory && matchSearch;
+                });
+
+                if (filtered.length === 0) {
+                    container.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 50px 20px; color: #666;">
+                            <h3>No meals found 🍲</h3>
+                            <p>Try searching for something else or choosing another category.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                filtered.forEach(item => {
+                    const img = item.image ? (item.image.startsWith('Images/') ? item.image : 'Images/' + item.image) : (defaultImages[item.food_name] || 'Images/Logo.jpg');
+                    const isAvailable = item.availability !== false && item.availability !== 0 && item.stock_quantity !== 0;
+                    const stockText = isAvailable ? 'Available' : 'Out of Stock';
+                    const badgeClass = isAvailable ? 'available' : 'sold-out';
+
+                    html += `
+                        <div class="menu-card ${!isAvailable ? 'out-of-stock' : ''}">
+                            <img src="${img}" alt="${item.food_name}" onerror="this.src='Images/Logo.jpg'">
+                            <div class="menu-info">
+                                <span class="stock-badge ${badgeClass}">${stockText}</span>
+                                <h2>${item.food_name}</h2>
+                                <p>${item.description || 'Freshly prepared campus meal.'}</p>
+                                <h3>KSh ${parseFloat(item.price).toFixed(0)}</h3>
+                                ${isAvailable 
+                                    ? `<a href="#" class="menu-btn" onclick="event.preventDefault(); addToCart('${item.food_name}', ${parseFloat(item.price)});">Add to Cart</a>` 
+                                    : `<button class="menu-btn" disabled style="background: #999; cursor: not-allowed;">Unavailable</button>`}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            }
+
+            // Category filter click handlers
+            pills.forEach(pill => {
+                pill.addEventListener('click', function() {
+                    pills.forEach(p => p.classList.remove('active'));
+                    this.classList.add('active');
+                    currentCategory = this.getAttribute('data-category');
+                    renderMenu();
+                });
+            });
+
+            // Instant search listener
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    searchQuery = this.value.trim().toLowerCase();
+                    renderMenu();
+                });
+            }
+
+            loadDynamicMenu();
+        });
+    </script>
+
+</body>
+
+</html>

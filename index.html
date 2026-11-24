@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PwaniBite | Pwani University Canteen</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+</head>
+
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+
+        <div class="logo">
+            <img src="Images/Logo.jpg" alt="PwaniBite Logo - Food delivery service for Pwani University">
+            <span>PwaniBite</span>
+        </div>
+
+        <ul class="nav-links" role="menubar">
+            <li role="none"><a href="index.html" role="menuitem" aria-current="page">Home</a></li>
+            <li role="none"><a href="menu.html" role="menuitem">Menu</a></li>
+            <li role="none"><a href="order.html" role="menuitem">Order Food</a></li>
+            <li role="none"><a href="delivery.html" role="menuitem">Delivery</a></li>
+            <li role="none"><a href="about.html" role="menuitem">About</a></li>
+            <li role="none"><a href="contact.html" role="menuitem">Contact</a></li>
+            <li role="none"><a href="feedback.html" role="menuitem">Feedback</a></li>
+            <li role="none"><a href="cart.html" role="menuitem" class="cart-icon-link" aria-label="Shopping cart">
+                <span class="cart-icon-symbol">🛒</span>
+                <span class="cart-count">0</span>
+            </a></li>
+        </ul>
+
+    </nav>
+
+
+    <!-- Hero Section -->
+    <header class="hero" role="banner">
+
+        <div class="hero-content">
+
+            <h1>Welcome to PwaniBite</h1>
+
+            <h2>Pwani University Canteen</h2>
+
+            <p>
+                Hungry, Comrade? 🍛
+                We got you covered<br>
+                Order your favourite meals and have them
+                delivered straight to your hostel room.
+            </p>
+
+            <div class="hero-buttons">
+                <a href="menu.html" class="btn" aria-label="View our food menu">View Menu</a>
+
+                <a href="order.html" class="btn secondary-btn" aria-label="Place a food order now">
+                    Order Now
+                </a>
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- Services Section -->
+    <section class="services">
+
+        <h2>Why Order With PwaniBite?</h2>
+
+        <div class="service-container">
+
+            <div class="service-card">
+                <h3>🍽️ Delicious Meals</h3>
+                <p>
+                    Enjoy a variety of affordable meals prepared
+                    for Pwani University students.
+                </p>
+            </div>
+
+
+            <div class="service-card">
+                <h3>📱 Easy Ordering</h3>
+                <p>
+                    Browse our menu and place your food order
+                    without leaving your hostel.
+                </p>
+            </div>
+            <div class="service-card">
+                <h3>🏠 Hostel Delivery</h3>
+                <p>
+                    Your meal is delivered directly to your
+                    hostel block and room.
+                </p>
+            </div>
+
+
+            <div class="service-card">
+                <h3>💰 Student Friendly</h3>
+                <p>
+                    Affordable food options designed with
+                    students in mind.
+                </p>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- Popular Meals -->
+    <section class="popular">
+
+        <h2>Popular Meals</h2>
+
+        <div class="food-container">
+
+            <div class="food-card">
+                <img src="Images/Pilau.jpg" alt="Pilau">
+                <h3>Pilau</h3>
+                <p>Delicious campus-style pilau.</p>
+                <span>KSh 100</span>
+                <button class="add-to-cart-btn" onclick="addToCart('Pilau', 100)">Add to Cart</button>
+            </div>
+
+
+            <div class="food-card">
+                <img src="Images/Chapo Offer.jpg" alt="Chapati Offer">
+                <h3>Chapati Offer</h3>
+                <p>Served with your choice of accompaniment.</p>
+                <span>KSh 50</span>
+                <button class="add-to-cart-btn" onclick="addToCart('Chapati Offer', 50)">Add to Cart</button>
+            </div>
+
+
+            <div class="food-card">
+                <img src="Images/Rice beans.jpg" alt="Rice and Beans">
+                <h3>Rice & Beans</h3>
+                <p>A favourite among comrades.</p>
+                <span>KSh 60</span>
+                <button class="add-to-cart-btn" onclick="addToCart('Rice & Beans', 60)">Add to Cart</button>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- Call To Action -->
+    <section class="cta">
+
+        <h2>Feeling Hungry?</h2>
+
+        <p>
+            Don't walk to the canteen. Let PwaniBite
+            bring your meal to you!
+        </p>
+
+        <a href="order.html" class="btn">
+            Place Your Order
+        </a>
+
+    </section>
+
+
+    <!-- Footer -->
+    <footer>
+
+        <p>
+            &copy; 2026 PwaniBite | Pwani University Canteen
+        </p>
+
+        <p>
+            Order Food • Hostel Delivery • Happy Comrades 
+            Hungry? Comrade? We got You covered
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

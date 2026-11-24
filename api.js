@@ -1,0 +1,606 @@
+// API Client for Pwani Bite Frontend
+// Handles all communication with the backend API
+
+// Configure PWANI_BITE_API_URL when the API is hosted separately. Django's
+// development server serves both the site and API from the same origin.
+const useLocalApi = ['localhost', '127.0.0.1'].includes(window.location.hostname) && window.location.port !== '8000';
+const API_BASE_URL = window.PWANI_BITE_API_URL ||
+    (useLocalApi ? 'http://localhost:8000/api' : `${window.location.origin}/api`);
+
+// Store JWT token
+let token = localStorage.getItem('pwaniBiteToken') || null;
+
+// Helper function to get headers
+function getHeaders() {
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return headers;
+}
+
+// Helper function to handle API responses
+async function handleResponse(response) {
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error || data.message || 'An error occurred');
+    }
+
+    return data;
+}
+
+// ============ AUTHENTICATION ============
+
+// Register new user
+async function register(userData) {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(userData)
+    });
+
+    const data = await handleResponse(response);
+
+    // Store token if registration successful
+    if (data.token) {
+        token = data.token;
+        localStorage.setItem('pwaniBiteToken', token);
+        localStorage.setItem('pwaniBiteCurrentUser', JSON.stringify(data.user));
+    }
+
+    return data;
+}
+
+// Login user
+async function login(email, password) {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ email, password })
+    });
+
+    const data = await handleResponse(response);
+
+    // Store token if login successful
+    if (data.token) {
+        token = data.token;
+        localStorage.setItem('pwaniBiteToken', token);
+        localStorage.setItem('pwaniBiteCurrentUser', JSON.stringify(data.user));
+    }
+
+    return data;
+}
+
+// Logout user
+function logout() {
+    token = null;
+    localStorage.removeItem('pwaniBiteToken');
+    localStorage.removeItem('pwaniBiteCurrentUser');
+}
+
+// Get current user
+async function getCurrentUser() {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// ============ FOOD ============
+
+// Get all food items
+async function getFood(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `${API_BASE_URL}/food?${queryString}` : `${API_BASE_URL}/food`;
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get food by ID
+async function getFoodById(id) {
+    const response = await fetch(`${API_BASE_URL}/food/${id}`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Add food item (admin only)
+async function addFood(foodData) {
+    const response = await fetch(`${API_BASE_URL}/food`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(foodData)
+    });
+
+    return await handleResponse(response);
+}
+
+// Update food item (admin only)
+async function updateFood(id, foodData) {
+    const response = await fetch(`${API_BASE_URL}/food/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(foodData)
+    });
+
+    return await handleResponse(response);
+}
+
+// Delete food item (admin only)
+async function deleteFood(id) {
+    const response = await fetch(`${API_BASE_URL}/food/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get food categories
+async function getFoodCategories() {
+    const response = await fetch(`${API_BASE_URL}/food/categories/list`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// ============ ORDERS ============
+
+// Get all orders (admin only)
+async function getOrders(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `${API_BASE_URL}/orders?${queryString}` : `${API_BASE_URL}/orders`;
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get current user's orders
+async function getMyOrders() {
+    const response = await fetch(`${API_BASE_URL}/orders/my-orders`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get order by ID
+async function getOrderById(id) {
+    const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Create new order
+async function createOrder(orderData) {
+    const response = await fetch(`${API_BASE_URL}/orders`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(orderData)
+    });
+
+    return await handleResponse(response);
+}
+
+// Update order status (admin only)
+async function updateOrderStatus(id, status) {
+    const response = await fetch(`${API_BASE_URL}/orders/${id}/status`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ order_status: status })
+    });
+
+    return await handleResponse(response);
+}
+
+// Cancel order (customer only)
+async function cancelOrder(id) {
+    const response = await fetch(`${API_BASE_URL}/orders/${id}/cancel`, {
+        method: 'PUT',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// ============ PAYMENTS ============
+
+// Get all payments (admin only)
+async function getPayments(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `${API_BASE_URL}/payments?${queryString}` : `${API_BASE_URL}/payments`;
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get payment by order ID
+async function getPaymentByOrderId(orderId) {
+    const response = await fetch(`${API_BASE_URL}/payments/order/${orderId}`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Create payment
+async function createPayment(paymentData) {
+    const response = await fetch(`${API_BASE_URL}/payments`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(paymentData)
+    });
+
+    return await handleResponse(response);
+}
+
+// Update payment status (admin only)
+async function updatePaymentStatus(id, status) {
+    const response = await fetch(`${API_BASE_URL}/payments/${id}/status`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ payment_status: status })
+    });
+
+    return await handleResponse(response);
+}
+
+// ============ DELIVERY ============
+
+// Get all deliveries (admin only)
+async function getDeliveries(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `${API_BASE_URL}/delivery?${queryString}` : `${API_BASE_URL}/delivery`;
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get delivery by order ID
+async function getDeliveryByOrderId(orderId) {
+    const response = await fetch(`${API_BASE_URL}/delivery/order/${orderId}`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get assigned deliveries (delivery person only)
+async function getMyDeliveries() {
+    const response = await fetch(`${API_BASE_URL}/delivery/my-deliveries`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Assign delivery person (admin only)
+async function assignDelivery(orderId, deliveryPersonId) {
+    const response = await fetch(`${API_BASE_URL}/delivery/assign`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+            order_id: orderId,
+            delivery_person_id: deliveryPersonId
+        })
+    });
+
+    return await handleResponse(response);
+}
+
+// Update delivery status
+async function updateDeliveryStatus(id, status) {
+    const response = await fetch(`${API_BASE_URL}/delivery/${id}/status`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ delivery_status: status })
+    });
+
+    return await handleResponse(response);
+}
+
+// Add delivery notes
+async function addDeliveryNotes(id, notes) {
+    const response = await fetch(`${API_BASE_URL}/delivery/${id}/notes`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ notes })
+    });
+
+    return await handleResponse(response);
+}
+
+// ============ FEEDBACK ============
+
+// Get all feedback (admin only)
+async function getFeedback() {
+    const response = await fetch(`${API_BASE_URL}/feedback`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get feedback by order ID
+async function getFeedbackByOrderId(orderId) {
+    const response = await fetch(`${API_BASE_URL}/feedback/order/${orderId}`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get current user's feedback
+async function getMyFeedback() {
+    const response = await fetch(`${API_BASE_URL}/feedback/my-feedback`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Submit feedback
+async function submitFeedback(feedbackData) {
+    const response = await fetch(`${API_BASE_URL}/feedback`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(feedbackData)
+    });
+
+    return await handleResponse(response);
+}
+
+// Get average ratings (admin only)
+async function getAverageRatings() {
+    const response = await fetch(`${API_BASE_URL}/feedback/stats/average`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// ============ REPORTS (Admin Only) ============
+
+// Get sales report
+async function getSalesReport(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `${API_BASE_URL}/reports/sales?${queryString}` : `${API_BASE_URL}/reports/sales`;
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get popular items
+async function getPopularItems(limit = 10) {
+    const response = await fetch(`${API_BASE_URL}/reports/popular-items?limit=${limit}`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get customer report
+async function getCustomerReport() {
+    const response = await fetch(`${API_BASE_URL}/reports/customers`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get delivery performance
+async function getDeliveryPerformance() {
+    const response = await fetch(`${API_BASE_URL}/reports/delivery-performance`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get dashboard statistics
+async function getDashboardStats() {
+    const response = await fetch(`${API_BASE_URL}/reports/dashboard`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get revenue by category
+async function getRevenueByCategory(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `${API_BASE_URL}/reports/revenue-by-category?${queryString}` : `${API_BASE_URL}/reports/revenue-by-category`;
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Get hourly orders
+async function getHourlyOrders(date = null) {
+    const queryString = date ? `?date=${date}` : '';
+    const response = await fetch(`${API_BASE_URL}/reports/hourly-orders${queryString}`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// ============ UTILITY FUNCTIONS ============
+
+// Check if user is authenticated
+function isAuthenticated() {
+    return token !== null;
+}
+
+// Check if user is admin
+function isAdmin() {
+    const user = JSON.parse(localStorage.getItem('pwaniBiteCurrentUser') || '{}');
+    return user.role === 'admin';
+}
+
+// Check if user is customer
+function isCustomer() {
+    const user = JSON.parse(localStorage.getItem('pwaniBiteCurrentUser') || '{}');
+    return user.role === 'customer';
+}
+
+// Check if user is delivery personnel
+function isDelivery() {
+    const user = JSON.parse(localStorage.getItem('pwaniBiteCurrentUser') || '{}');
+    return user.role === 'delivery';
+}
+
+// Get current user from localStorage
+function getCurrentUserFromStorage() {
+    return JSON.parse(localStorage.getItem('pwaniBiteCurrentUser') || '{}');
+}
+
+// Only allow the known same-site checkout return destination after auth.
+function getPostAuthRedirect() {
+    const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+    return returnTo === 'order.html' ? 'order.html' : 'index.html';
+}
+
+// ============ M-PESA PAYMENT ============
+
+// Initiate STK Push (Lipa Na M-Pesa Online)
+async function initiateMpesaSTKPush(orderId, phoneNumber, amount) {
+    const response = await fetch(`${API_BASE_URL}/mpesa/stkpush`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+            order_id: orderId,
+            phone_number: phoneNumber,
+            amount: amount
+        })
+    });
+
+    return await handleResponse(response);
+}
+
+// Check payment status
+async function checkMpesaPaymentStatus(paymentId) {
+    const response = await fetch(`${API_BASE_URL}/mpesa/status/${paymentId}`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Query M-Pesa transaction
+async function queryMpesaTransaction(checkoutRequestId) {
+    const response = await fetch(`${API_BASE_URL}/mpesa/query`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+            checkout_request_id: checkoutRequestId
+        })
+    });
+
+    return await handleResponse(response);
+}
+
+// Export all functions for use in other files
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        register,
+        login,
+        logout,
+        getCurrentUser,
+        getFood,
+        getFoodById,
+        addFood,
+        updateFood,
+        deleteFood,
+        getFoodCategories,
+        getOrders,
+        getMyOrders,
+        getOrderById,
+        createOrder,
+        updateOrderStatus,
+        cancelOrder,
+        getPayments,
+        getPaymentByOrderId,
+        createPayment,
+        updatePaymentStatus,
+        getDeliveries,
+        getDeliveryByOrderId,
+        getMyDeliveries,
+        assignDelivery,
+        updateDeliveryStatus,
+        addDeliveryNotes,
+        getFeedback,
+        getFeedbackByOrderId,
+        getMyFeedback,
+        submitFeedback,
+        getAverageRatings,
+        getSalesReport,
+        getPopularItems,
+        getCustomerReport,
+        getDeliveryPerformance,
+        getDashboardStats,
+        getRevenueByCategory,
+        getHourlyOrders,
+        initiateMpesaSTKPush,
+        checkMpesaPaymentStatus,
+        queryMpesaTransaction,
+        isAuthenticated,
+        isAdmin,
+        isCustomer,
+        isDelivery,
+        getCurrentUserFromStorage
+    };
+}

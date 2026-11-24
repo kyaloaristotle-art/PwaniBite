@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | PwaniBite</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+
+        <div class="logo">
+            <img src="Images/Logo.jpg" alt="PwaniBite Logo - Food delivery service for Pwani University">
+            <span>PwaniBite</span>
+        </div>
+
+        <ul class="nav-links" role="menubar">
+            <li role="none"><a href="index.html" role="menuitem">Home</a></li>
+            <li role="none"><a href="menu.html" role="menuitem">Menu</a></li>
+            <li role="none"><a href="order.html" role="menuitem">Order Food</a></li>
+            <li role="none"><a href="delivery.html" role="menuitem">Delivery</a></li>
+            <li role="none"><a href="about.html" role="menuitem">About</a></li>
+            <li role="none"><a href="contact.html" role="menuitem">Contact</a></li>
+            <li role="none"><a href="feedback.html" role="menuitem">Feedback</a></li>
+            <li role="none"><a href="cart.html" role="menuitem" class="cart-icon-link" aria-label="Shopping cart">
+                <span class="cart-icon-symbol">🛒</span>
+                <span class="cart-count">0</span>
+            </a></li>
+        </ul>
+
+    </nav>
+
+    <!-- Login Header -->
+    <section class="auth-header">
+
+        <h1>Login to PwaniBite</h1>
+
+        <p>
+            Access your account to order food and track deliveries
+        </p>
+
+    </section>
+
+    <!-- Login Section -->
+    <section class="auth-section">
+
+        <div class="auth-container">
+
+            <h2 id="login-heading">Login</h2>
+
+            <form id="loginForm" aria-labelledby="login-heading">
+
+                <div class="form-group">
+
+                    <label for="login-email">
+                        Email Address
+                    </label>
+
+                    <input
+                        type="email"
+                        id="login-email"
+                        name="email"
+                        placeholder="Enter your email"
+                        required
+                        aria-required="true"
+                        autocomplete="email"
+                        autocapitalize="none"
+                        spellcheck="false"
+                        aria-describedby="login-email-help"
+                    >
+                    <span id="login-email-help" class="error-message">Please enter a valid email</span>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="login-password">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="login-password"
+                        name="password"
+                        placeholder="Enter your password"
+                        required
+                        aria-required="true"
+                        autocomplete="current-password"
+                        aria-describedby="login-password-help"
+                    >
+                    <span id="login-password-help" class="error-message">Please enter your password</span>
+
+                    <button type="button" class="password-toggle" id="toggle-password" aria-controls="login-password" aria-pressed="false">Show password</button>
+
+                </div>
+
+                <button
+                    type="submit"
+                    class="auth-submit"
+                >
+                    Login
+                </button>
+
+            </form>
+
+            <p id="login-feedback" class="login-feedback" role="status" aria-live="polite" hidden></p>
+
+            <div class="auth-switch">
+                <p>Don't have an account?</p>
+                <a href="register.html" class="btn">Register</a>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer>
+
+        <p>
+            &copy; 2026 PwaniBite | Pwani University Canteen
+        </p>
+
+        <p>
+            Order Food • Hostel Delivery • Happy Comrades
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const loginFeedback = document.getElementById('login-feedback');
+        const emailInput = document.getElementById('login-email');
+        const passwordInput = document.getElementById('login-password');
+        const togglePassword = document.getElementById('toggle-password');
+
+        function setFieldError(input, messageElement, message) {
+            input.classList.add('error');
+            input.setAttribute('aria-invalid', 'true');
+            messageElement.textContent = message;
+            messageElement.style.display = 'block';
+        }
+
+        function clearFieldError(input, messageElement) {
+            input.classList.remove('error');
+            input.removeAttribute('aria-invalid');
+            messageElement.style.display = 'none';
+        }
+
+        function clearLoginFeedback() {
+            loginFeedback.textContent = '';
+            loginFeedback.hidden = true;
+        }
+
+        togglePassword.addEventListener('click', function() {
+            const isVisible = passwordInput.type === 'text';
+            passwordInput.type = isVisible ? 'password' : 'text';
+            togglePassword.textContent = isVisible ? 'Show password' : 'Hide password';
+            togglePassword.setAttribute('aria-pressed', String(!isVisible));
+        });
+
+        emailInput.addEventListener('input', function() {
+            clearLoginFeedback();
+            clearFieldError(emailInput, document.getElementById('login-email-help'));
+        });
+        passwordInput.addEventListener('input', function() {
+            clearLoginFeedback();
+            clearFieldError(passwordInput, document.getElementById('login-password-help'));
+        });
+
+        const registerLink = document.querySelector('.auth-switch a');
+        if (getPostAuthRedirect() === 'order.html') {
+            registerLink.href = 'register.html?returnTo=order.html';
+        }
+
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            clearLoginFeedback();
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            const emailHelp = document.getElementById('login-email-help');
+            const passwordHelp = document.getElementById('login-password-help');
+
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                setFieldError(emailInput, emailHelp, 'Enter a valid email address.');
+                emailInput.focus();
+                return;
+            } else {
+                clearFieldError(emailInput, emailHelp);
+            }
+
+            // Validate password
+            if (!password) {
+                setFieldError(passwordInput, passwordHelp, 'Enter your password.');
+                passwordInput.focus();
+                return;
+            } else {
+                clearFieldError(passwordInput, passwordHelp);
+            }
+
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Logging in...';
+            submitBtn.disabled = true;
+            loginFeedback.textContent = 'Signing you in…';
+            loginFeedback.hidden = false;
+
+            try {
+                const response = await login(email, password);
+                loginFeedback.textContent = `Welcome back, ${response.user.name}.`;
+                window.location.href = getPostAuthRedirect();
+            } catch (error) {
+                loginFeedback.textContent = error.message || 'We could not sign you in. Check your details and try again.';
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+
+</body>
+</html>

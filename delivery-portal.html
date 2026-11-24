@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Portal | PwaniBite Couriers</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+    <style>
+        .portal-header {
+            background: linear-gradient(135deg, #063b2f 0%, #0d5f4c 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .portal-header h1 {
+            color: #f6c343;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+
+        .portal-container {
+            max-width: 900px;
+            margin: -20px auto 40px;
+            padding: 0 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 32px;
+            color: #063b2f;
+            margin: 5px 0;
+        }
+
+        .stat-card p {
+            color: #666;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .tabs-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 5px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            transition: 0.2s;
+        }
+
+        .tab-btn.active {
+            color: #063b2f;
+            border-bottom: 3px solid #063b2f;
+            background: #eef7f4;
+        }
+
+        .delivery-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 18px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+            border-left: 5px solid #063b2f;
+            transition: transform 0.2s;
+        }
+
+        .delivery-card.completed {
+            border-left-color: #10b981;
+            opacity: 0.9;
+        }
+
+        .delivery-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .delivery-card-header h3 {
+            margin: 0;
+            color: #063b2f;
+            font-size: 18px;
+        }
+
+        .delivery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .delivery-grid p {
+            margin: 4px 0;
+            color: #4b5563;
+            font-size: 14px;
+        }
+
+        .destination-highlight {
+            background: #fef3c7;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            color: #92400e;
+            display: inline-block;
+            margin: 5px 0;
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .actions-row .btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-call {
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 5px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .empty-portal {
+            background: white;
+            border-radius: 10px;
+            padding: 50px 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .empty-portal h3 {
+            color: #063b2f;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Navigation Bar -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="logo">
+            <img src="Images/Logo.jpg" alt="PwaniBite Logo">
+            <span>PwaniBite</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="menu.html">Menu</a></li>
+            <li><a href="order.html">Order Food</a></li>
+            <li><a href="orders.html">Orders</a></li>
+            <li><a href="admin.html">Admin</a></li>
+            <li><a href="delivery-portal.html" class="active">Courier Portal</a></li>
+        </ul>
+    </nav>
+
+    <!-- Header -->
+    <header class="portal-header">
+        <h1>🛵 Courier Delivery Portal</h1>
+        <p>Real-time campus order dispatch and hostel delivery management</p>
+    </header>
+
+    <div class="portal-container">
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <p>Active Deliveries</p>
+                <h3 id="stat-active">0</h3>
+            </div>
+            <div class="stat-card">
+                <p>Delivered Today</p>
+                <h3 id="stat-completed">0</h3>
+            </div>
+            <div class="stat-card">
+                <p>Active Courier</p>
+                <h3 id="stat-courier" style="font-size: 20px; margin-top: 12px;">Logged In</h3>
+            </div>
+        </div>
+
+        <!-- Filter Tabs & Refresh -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div class="tabs-nav">
+                <button class="tab-btn active" onclick="switchTab('active')">Active Deliveries</button>
+                <button class="tab-btn" onclick="switchTab('completed')">Completed History</button>
+            </div>
+            <button class="btn secondary-btn" onclick="loadCourierDeliveries()" style="margin-bottom: 15px; padding: 8px 14px; font-size: 14px;">
+                🔄 Refresh Deliveries
+            </button>
+        </div>
+
+        <!-- List Container -->
+        <div id="deliveries-list">
+            <p style="text-align:center; padding: 40px; color:#666;">Loading deliveries...</p>
+        </div>
+    </div>
+
+    <!-- Note Modal -->
+    <div id="note-modal" class="order-confirmation-modal" style="display: none;">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>Add Delivery Note 📝</h2>
+                <button class="close-modal" onclick="closeNoteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Add quick delivery status note visible to student:</p>
+                <textarea id="courier-note-input" rows="3" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;" placeholder="e.g. Arrived at Hostel Gate, please come to reception"></textarea>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn secondary-btn" onclick="closeNoteModal()">Cancel</button>
+                <button class="btn" id="save-note-btn">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 PwaniBite Delivery System | Pwani University</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let allDeliveries = [];
+        let currentTab = 'active';
+        let activeNoteDeliveryId = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check auth
+            if (typeof isAuthenticated === 'function') {
+                if (!isAuthenticated()) {
+                    document.getElementById('deliveries-list').innerHTML = `
+                        <div class="empty-portal">
+                            <h3>🔐 Courier Login Required</h3>
+                            <p>You must be signed in with a Delivery or Admin account to access this portal.</p>
+                            <a href="login.html" class="btn" style="margin-top: 15px;">Login</a>
+                        </div>
+                    `;
+                    return;
+                }
+            }
+
+            const currentUser = getCurrentUserFromStorage();
+            if (currentUser && currentUser.name) {
+                document.getElementById('stat-courier').textContent = currentUser.name.split(' ')[0];
+            }
+
+            await loadCourierDeliveries();
+        });
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(tab));
+            });
+            renderDeliveries();
+        }
+
+        async function loadCourierDeliveries() {
+            const listElem = document.getElementById('deliveries-list');
+            listElem.innerHTML = '<p style="text-align:center; padding: 40px; color:#666;">Syncing deliveries...</p>';
+
+            try {
+                let deliveries = [];
+                if (typeof getMyDeliveries === 'function') {
+                    const res = await getMyDeliveries();
+                    if (res && res.deliveries) {
+                        deliveries = res.deliveries;
+                    }
+                }
+
+                // If user is admin or courier with no assigned API records yet, also check orders
+                if (deliveries.length === 0 && typeof getOrders === 'function') {
+                    try {
+                        const ordersRes = await getOrders();
+                        if (ordersRes && ordersRes.orders) {
+                            deliveries = ordersRes.orders.map(o => ({
+                                delivery_id: o.order_id,
+                                order_id: o.order_id,
+                                order_number: o.order_number || ('PB' + o.order_id),
+                                delivery_status: o.order_status === 'Delivered' ? 'Delivered' : (o.order_status === 'Out for Delivery' ? 'In Transit' : 'Assigned'),
+                                hostel: o.hostel,
+                                block: o.block,
+                                room: o.room,
+                                delivery_location: o.delivery_location || `${o.hostel}, Room ${o.room}`,
+                                customer_name: o.customer_name || 'Student Customer',
+                                customer_phone: o.customer_phone || '0700000000',
+                                delivery_notes: o.special_instructions || ''
+                            }));
+                        }
+                    } catch (e) {
+                        console.warn('Orders fallback fetch:', e.message);
+                    }
+                }
+
+                allDeliveries = deliveries;
+                updateStats();
+                renderDeliveries();
+
+            } catch (err) {
+                console.error('Failed to load deliveries:', err);
+                listElem.innerHTML = `
+                    <div class="empty-portal">
+                        <h3>Notice</h3>
+                        <p>${err.message || 'Could not connect to deliveries endpoint.'}</p>
+                        <button class="btn" onclick="loadCourierDeliveries()" style="margin-top: 15px;">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function updateStats() {
+            const active = allDeliveries.filter(d => (d.delivery_status || '').toLowerCase() !== 'delivered' && (d.delivery_status || '').toLowerCase() !== 'failed').length;
+            const completed = allDeliveries.filter(d => (d.delivery_status || '').toLowerCase() === 'delivered').length;
+
+            document.getElementById('stat-active').textContent = active;
+            document.getElementById('stat-completed').textContent = completed;
+        }
+
+        function renderDeliveries() {
+            const listElem = document.getElementById('deliveries-list');
+
+            const filtered = allDeliveries.filter(d => {
+                const isDelivered = (d.delivery_status || '').toLowerCase() === 'delivered';
+                return currentTab === 'active' ? !isDelivered : isDelivered;
+            });
+
+            if (filtered.length === 0) {
+                listElem.innerHTML = `
+                    <div class="empty-portal">
+                        <h3>${currentTab === 'active' ? '🎉 All clear!' : '📦 No completed history'}</h3>
+                        <p>${currentTab === 'active' ? 'No active deliveries assigned at the moment.' : 'Delivered orders will appear here.'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(d => {
+                const status = d.delivery_status || 'Assigned';
+                const statusClass = status.toLowerCase().replace(/\s+/g, '-');
+                const isDelivered = status.toLowerCase() === 'delivered';
+
+                let nextActionBtn = '';
+                if (status === 'Assigned' || status === 'Pending') {
+                    nextActionBtn = `<button class="btn" onclick="handleStatusUpdate(${d.delivery_id}, 'Picked Up')">🍲 Pick Up From Kitchen</button>`;
+                } else if (status === 'Picked Up') {
+                    nextActionBtn = `<button class="btn" style="background:#d97706; border-color:#d97706;" onclick="handleStatusUpdate(${d.delivery_id}, 'In Transit')">🛵 Start Transit</button>`;
+                } else if (status === 'In Transit' || status === 'Out for Delivery') {
+                    nextActionBtn = `<button class="btn" style="background:#059669; border-color:#059669;" onclick="handleStatusUpdate(${d.delivery_id}, 'Delivered')">✅ Mark Delivered</button>`;
+                }
+
+                html += `
+                    <div class="delivery-card ${isDelivered ? 'completed' : ''}">
+                        <div class="delivery-card-header">
+                            <div>
+                                <h3>${d.order_number || 'Order #' + d.order_id}</h3>
+                                <div class="destination-highlight">
+                                    🏢 ${d.hostel || 'Hostel'}, ${d.block || ''} - Room ${d.room || 'N/A'}
+                                </div>
+                            </div>
+                            <span class="status ${statusClass}">${status}</span>
+                        </div>
+
+                        <div class="delivery-grid">
+                            <div>
+                                <p><strong>Customer:</strong> ${d.customer_name || 'Student'}</p>
+                                <p><strong>Contact:</strong> ${d.customer_phone ? `<a href="tel:${d.customer_phone}" class="btn-call">📞 Call ${d.customer_phone}</a>` : 'Not provided'}</p>
+                            </div>
+                            <div>
+                                <p><strong>Full Location:</strong> ${d.delivery_location || 'Hostel Campus'}</p>
+                                <p><strong>Rider Note:</strong> ${d.delivery_notes || 'None'}</p>
+                            </div>
+                        </div>
+
+                        ${!isDelivered ? `
+                            <div class="actions-row">
+                                ${nextActionBtn}
+                                <button class="btn secondary-btn" onclick="openNoteModal(${d.delivery_id}, '${(d.delivery_notes || '').replace(/'/g, "\\'")}')">
+                                    📝 Update Note
+                                </button>
+                            </div>
+                        ` : `
+                            <div style="font-size: 13px; color: #059669; font-weight: bold; padding-top: 10px;">
+                                ✓ Delivered successfully to hostel room
+                            </div>
+                        `}
+                    </div>
+                `;
+            });
+
+            listElem.innerHTML = html;
+        }
+
+        async function handleStatusUpdate(deliveryId, newStatus) {
+            try {
+                if (typeof updateDeliveryStatus === 'function') {
+                    await updateDeliveryStatus(deliveryId, newStatus);
+                }
+
+                // Update local memory
+                const item = allDeliveries.find(d => d.delivery_id === deliveryId);
+                if (item) {
+                    item.delivery_status = newStatus;
+                }
+
+                updateStats();
+                renderDeliveries();
+                alert(`Order delivery status updated to: ${newStatus}`);
+            } catch (err) {
+                console.error('Update delivery error:', err);
+                alert('Notice: ' + err.message);
+                await loadCourierDeliveries();
+            }
+        }
+
+        function openNoteModal(deliveryId, currentNote) {
+            activeNoteDeliveryId = deliveryId;
+            document.getElementById('courier-note-input').value = currentNote || '';
+            document.getElementById('note-modal').style.display = 'flex';
+        }
+
+        function closeNoteModal() {
+            document.getElementById('note-modal').style.display = 'none';
+            activeNoteDeliveryId = null;
+        }
+
+        document.getElementById('save-note-btn').addEventListener('click', async function() {
+            const note = document.getElementById('courier-note-input').value.trim();
+            if (!activeNoteDeliveryId) return;
+
+            try {
+                if (typeof addDeliveryNotes === 'function') {
+                    await addDeliveryNotes(activeNoteDeliveryId, note);
+                }
+
+                const item = allDeliveries.find(d => d.delivery_id === activeNoteDeliveryId);
+                if (item) {
+                    item.delivery_notes = note;
+                }
+
+                closeNoteModal();
+                renderDeliveries();
+                alert('Delivery note updated successfully!');
+            } catch (err) {
+                alert('Failed to save note: ' + err.message);
+            }
+        });
+    </script>
+</body>
+</html>

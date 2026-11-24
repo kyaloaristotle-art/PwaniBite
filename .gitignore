@@ -1,0 +1,20 @@
+# Local secrets and environment settings
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/django_api/.env.example
+
+# Python and Django local files
+backend/.venv/
+backend/django_api/*.sqlite3
+__pycache__/
+*.py[cod]
+
+# Dependencies and generated output
+node_modules/
+backend/node_modules/
+dist/
+build/

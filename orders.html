@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders | PwaniBite</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+
+        <div class="logo">
+            <img src="Images/Logo.jpg" alt="PwaniBite Logo - Food delivery service for Pwani University">
+            <span>PwaniBite</span>
+        </div>
+
+        <ul class="nav-links" role="menubar">
+            <li role="none"><a href="index.html" role="menuitem">Home</a></li>
+            <li role="none"><a href="menu.html" role="menuitem">Menu</a></li>
+            <li role="none"><a href="order.html" role="menuitem">Order Food</a></li>
+            <li role="none"><a href="delivery.html" role="menuitem">Delivery</a></li>
+            <li role="none"><a href="about.html" role="menuitem">About</a></li>
+            <li role="none"><a href="contact.html" role="menuitem">Contact</a></li>
+            <li role="none"><a href="feedback.html" role="menuitem">Feedback</a></li>
+            <li role="none"><a href="cart.html" role="menuitem" class="cart-icon-link" aria-label="Shopping cart">
+                <span class="cart-icon-symbol">🛒</span>
+                <span class="cart-count">0</span>
+            </a></li>
+        </ul>
+
+    </nav>
+
+    <!-- Orders Header -->
+    <section class="auth-header">
+
+        <h1>My Orders</h1>
+
+        <p>
+            Track your food orders and delivery status
+        </p>
+
+    </section>
+
+    <!-- Orders Section -->
+    <section class="orders-section">
+
+        <div class="orders-container">
+
+            <div id="orders-list">
+                
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Tracking Modal -->
+    <div id="tracking-modal" class="order-confirmation-modal" style="display: none;">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h2>Live Order Tracking 🛵</h2>
+                <button class="close-modal" onclick="closeTrackingModal()" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body" id="tracking-modal-body">
+                <!-- Dynamically populated -->
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <button class="btn secondary-btn" id="refresh-track-btn" onclick="refreshCurrentTracking()">🔄 Refresh Status</button>
+                <button class="btn close-modal-btn" onclick="closeTrackingModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+
+        <p>
+            &copy; 2026 PwaniBite | Pwani University Canteen
+        </p>
+
+        <p>
+            Order Food • Hostel Delivery • Happy Comrades
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let currentOrdersList = [];
+        let currentlyTrackedOrderId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserOrders();
+        });
+
+        async function loadUserOrders() {
+            const ordersList = document.getElementById('orders-list');
+
+            // Check if user is authenticated
+            if (!isAuthenticated()) {
+                ordersList.innerHTML = `
+                    <div class="no-orders">
+                        <h2>Please Login</h2>
+                        <p>You need to be logged in to view your orders.</p>
+                        <a href="login.html" class="btn">Login</a>
+                    </div>
+                `;
+                return;
+            }
+
+            // Show loading state
+            ordersList.innerHTML = '<p>Loading your orders...</p>';
+
+            try {
+                // Fetch orders from backend API
+                const response = await getMyOrders();
+                const orders = Array.isArray(response) ? response : (response && response.orders ? response.orders : []);
+                currentOrdersList = orders;
+
+                if (!orders || orders.length === 0) {
+                    ordersList.innerHTML = `
+                        <div class="no-orders">
+                            <h2>No Orders Yet</h2>
+                            <p>You haven't placed any orders yet.</p>
+                            <a href="menu.html" class="btn">Browse Menu</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                // Display latest first
+                [...orders].reverse().forEach(order => {
+                    const statusClass = (order.order_status || 'pending').toLowerCase().replace(/\s+/g, '-');
+                    const date = new Date(order.order_date || order.created_at).toLocaleDateString();
+                    const time = new Date(order.order_date || order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    let itemsHtml = '';
+                    if (order.items && Array.isArray(order.items)) {
+                        order.items.forEach(item => {
+                            itemsHtml += `<p>• ${item.food_name || item.name} x${item.quantity} - KSh ${item.price * item.quantity}</p>`;
+                        });
+                    }
+
+                    html += `
+                        <div class="order-card">
+                            <div class="order-header">
+                                <h3>${order.order_number || 'Order #' + order.order_id}</h3>
+                                <span class="status ${statusClass}">${order.order_status || 'Pending'}</span>
+                            </div>
+                            <div class="order-details">
+                                <p><strong>Date:</strong> ${date} at ${time}</p>
+                                <p><strong>Delivery Location:</strong> ${order.hostel || ''}, ${order.block || ''}, Room ${order.room || ''}</p>
+                                <p><strong>Items:</strong></p>
+                                ${itemsHtml || '<p>Standard items</p>'}
+                                <p><strong>Total:</strong> KSh ${order.total_amount}</p>
+                            </div>
+                            <div class="order-actions">
+                                <button class="btn" onclick="trackOrder('${order.order_id}')">Track Order</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                ordersList.innerHTML = html;
+            } catch (error) {
+                console.error('Failed to load orders:', error);
+                ordersList.innerHTML = `
+                    <div class="no-orders">
+                        <h2>Error Loading Orders</h2>
+                        <p>Failed to load your orders. Please try again later.</p>
+                        <p><small>Error: ${error.message}</small></p>
+                        <button class="btn" onclick="loadUserOrders()">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        async function trackOrder(orderId) {
+            currentlyTrackedOrderId = orderId;
+            const modal = document.getElementById('tracking-modal');
+            const body = document.getElementById('tracking-modal-body');
+            modal.style.display = 'flex';
+
+            // Show loading inside modal
+            body.innerHTML = '<p style="text-align:center; padding: 20px;">Fetching live tracking details...</p>';
+
+            let order = currentOrdersList.find(o => String(o.order_id) === String(orderId));
+            let delivery = null;
+
+            try {
+                if (typeof getOrderById === 'function') {
+                    const freshOrderRes = await getOrderById(orderId);
+                    if (freshOrderRes && freshOrderRes.order) {
+                        order = freshOrderRes.order;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not fetch fresh order from API:', e.message);
+            }
+
+            try {
+                if (typeof getDeliveryByOrderId === 'function') {
+                    const delRes = await getDeliveryByOrderId(orderId);
+                    if (delRes && delRes.delivery) {
+                        delivery = delRes.delivery;
+                    }
+                }
+            } catch (e) {
+                // Not yet assigned or delivery record not created yet
+            }
+
+            renderTrackingDetails(order, delivery);
+        }
+
+        function renderTrackingDetails(order, delivery) {
+            const body = document.getElementById('tracking-modal-body');
+            if (!order) {
+                body.innerHTML = '<p style="color:red; text-align:center;">Order details not found.</p>';
+                return;
+            }
+
+            const rawStatus = (order.order_status || 'Pending').trim();
+            const isCancelled = rawStatus.toLowerCase() === 'cancelled';
+
+            // Status steps order
+            const steps = [
+                { key: 'Pending', label: 'Order Placed', num: 1 },
+                { key: 'Preparing', label: 'Kitchen Preparing', num: 2 },
+                { key: 'Out for Delivery', label: 'On The Way', num: 3 },
+                { key: 'Delivered', label: 'Delivered', num: 4 }
+            ];
+
+            const statusIndexMap = {
+                'pending': 0,
+                'preparing': 1,
+                'out for delivery': 2,
+                'delivered': 3
+            };
+
+            const currentIdx = statusIndexMap[rawStatus.toLowerCase()] ?? 0;
+
+            let timelineHtml = '';
+            if (isCancelled) {
+                timelineHtml = `
+                    <div style="background: #fee2e2; border: 1px solid #ef4444; color: #991b1b; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold;">
+                        ❌ This order was Cancelled.
+                    </div>
+                `;
+            } else {
+                timelineHtml = '<div class="tracking-timeline">';
+                steps.forEach((step, idx) => {
+                    let stepClass = '';
+                    if (idx < currentIdx) {
+                        stepClass = 'completed';
+                    } else if (idx === currentIdx) {
+                        stepClass = 'current';
+                    }
+                    timelineHtml += `
+                        <div class="tracking-step ${stepClass}">
+                            <div class="step-circle">${idx < currentIdx ? '✓' : step.num}</div>
+                            <span>${step.label}</span>
+                        </div>
+                    `;
+                });
+                timelineHtml += '</div>';
+            }
+
+            // Estimate delivery message
+            let estimateMsg = '⏱️ Preparing your meal fresh in the canteen';
+            if (rawStatus === 'Out for Delivery') {
+                estimateMsg = '🛵 Courier is on the way to your hostel room!';
+            } else if (rawStatus === 'Delivered') {
+                estimateMsg = '✅ Order successfully delivered to your room. Enjoy your meal!';
+            } else if (isCancelled) {
+                estimateMsg = 'This order has been cancelled.';
+            }
+
+            let deliveryPersonnelInfo = '';
+            if (delivery && delivery.delivery_person_name) {
+                deliveryPersonnelInfo = `
+                    <div style="margin-top: 10px; padding: 10px; background: #e6f4ea; border-radius: 6px;">
+                        <p><strong>Courier Assigned:</strong> ${delivery.delivery_person_name}</p>
+                        ${delivery.delivery_notes ? `<p><strong>Courier Note:</strong> ${delivery.delivery_notes}</p>` : ''}
+                    </div>
+                `;
+            }
+
+            body.innerHTML = `
+                <div class="order-number" style="margin-bottom: 15px;">
+                    <p style="margin:0; color:#666;">Tracking</p>
+                    <h3 style="margin:5px 0 0; color:#063b2f;">${order.order_number || 'Order #' + order.order_id}</h3>
+                </div>
+
+                ${timelineHtml}
+
+                <div class="delivery-estimate" style="margin-bottom: 15px;">
+                    <p style="margin: 0; font-weight: 500;">${estimateMsg}</p>
+                </div>
+
+                <div class="order-info">
+                    <p><strong>Destination:</strong> ${order.hostel || ''}, ${order.block || ''}, Room ${order.room || ''}</p>
+                    <p><strong>Delivery Window:</strong> ${order.delivery_time || 'Standard (30-45 mins)'}</p>
+                    <p><strong>Total Paid:</strong> KSh ${order.total_amount}</p>
+                    ${order.special_instructions ? `<p><strong>Note:</strong> ${order.special_instructions}</p>` : ''}
+                    ${deliveryPersonnelInfo}
+                </div>
+            `;
+        }
+
+        async function refreshCurrentTracking() {
+            if (currentlyTrackedOrderId) {
+                const btn = document.getElementById('refresh-track-btn');
+                const orig = btn.textContent;
+                btn.textContent = 'Refreshing...';
+                btn.disabled = true;
+                await trackOrder(currentlyTrackedOrderId);
+                btn.textContent = orig;
+                btn.disabled = false;
+            }
+        }
+
+        function closeTrackingModal() {
+            const modal = document.getElementById('tracking-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            currentlyTrackedOrderId = null;
+        }
+
+        // Close on backdrop click
+        window.addEventListener('click', function(e) {
+            const modal = document.getElementById('tracking-modal');
+            if (e.target === modal) {
+                closeTrackingModal();
+            }
+        });
+
+</body>
+</html>

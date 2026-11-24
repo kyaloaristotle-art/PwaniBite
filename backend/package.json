@@ -1,0 +1,23 @@
+{
+  "name": "pwani-bite-backend",
+  "version": "1.0.0",
+  "description": "Django REST backend for Pwani Bite",
+  "scripts": {
+    "start": "python django_api/manage.py runserver 127.0.0.1:8000",
+    "dev": "python django_api/manage.py runserver 127.0.0.1:8000",
+    "init-db": "node database/init.js"
+  },
+  "keywords": [
+    "food",
+    "ordering",
+    "delivery",
+    "campus",
+    "university"
+  ],
+  "author": "Pwani Bite Team",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "mysql2": "^3.6.0"
+  }
+}

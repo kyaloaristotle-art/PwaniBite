@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Dashboard | PwaniBite</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+
+</head>
+
+<body>
+
+    <!-- ================================
+         ADMIN NAVIGATION
+    ================================= -->
+
+    <nav class="admin-navbar">
+
+        <div class="admin-logo">
+
+            <img src="Images/Logo.jpg"
+                 alt="PwaniBite Logo">
+
+            <div>
+                <span>PwaniBite</span>
+                <small>Admin Dashboard</small>
+            </div>
+
+        </div>
+
+
+        <div class="admin-user">
+
+            <span>👨‍💼</span>
+
+            <div>
+                <strong>Administrator</strong>
+                <small>Canteen Manager</small>
+            </div>
+
+        </div>
+
+    </nav>
+
+
+    <!-- ================================
+         DASHBOARD LAYOUT
+    ================================= -->
+
+    <div class="dashboard">
+
+
+        <!-- SIDEBAR -->
+
+        <aside class="sidebar">
+
+            <h3>Dashboard</h3>
+
+            <ul>
+
+                <li>
+                    <a href="admin.html" class="active">
+                        🏠 Dashboard
+                    </a>
+                </li>
+
+                <li>
+                    <a href="#orders">
+                        🛒 Orders
+                    </a>
+                </li>
+
+                <li>
+                    <a href="menu-management.html">
+                        🍛 Menu
+                    </a>
+                </li>
+
+                <li>
+                    <a href="#customers">
+                        👥 Customers
+                    </a>
+                </li>
+
+                <li>
+                    <a href="#feedback">
+                        ⭐ Feedback
+                    </a>
+                </li>
+
+                <li>
+                    <a href="delivery-portal.html">
+                        🚚 Delivery
+                    </a>
+                </li>
+
+                <li>
+                    <a href="index.html">
+                        🌐 View Website
+                    </a>
+                </li>
+
+            </ul>
+
+        </aside>
+
+
+        <!-- ================================
+             MAIN DASHBOARD
+        ================================= -->
+
+        <main class="dashboard-content">
+
+
+            <!-- PAGE HEADER -->
+
+            <div class="dashboard-header">
+
+                <div>
+
+                    <h1>Dashboard</h1>
+
+                    <p>
+                        Welcome back, Administrator 👋
+                    </p>
+
+                </div>
+
+                <button class="dashboard-btn">
+                    + New Order
+                </button>
+
+            </div>
+
+
+            <!-- ================================
+                 STATISTICS
+            ================================= -->
+
+            <section class="stats-container" id="stats-container">
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        🛒
+                    </div>
+
+                    <div>
+
+                        <h3 id="total-orders">0</h3>
+
+                        <p>Total Orders</p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        ⏳
+                    </div>
+
+                    <div>
+
+                        <h3 id="pending-orders">0</h3>
+
+                        <p>Pending Orders</p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        🚚
+                    </div>
+
+                    <div>
+
+                        <h3 id="delivered-orders">0</h3>
+
+                        <p>Delivered</p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        💰
+                    </div>
+
+                    <div>
+
+                        <h3 id="total-sales">KSh 0</h3>
+
+                        <p>Total Sales</p>
+
+                    </div>
+
+                </div>
+
+
+            </section>
+
+
+            <!-- ================================
+                 RECENT ORDERS
+            ================================= -->
+
+            <section class="dashboard-card"
+                     id="orders">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <h2>Recent Orders</h2>
+
+                        <p>
+                            Latest food orders from students
+                        </p>
+
+                    </div>
+
+                    <a href="#orders"
+                       class="view-all">
+                        View All
+                    </a>
+
+                </div>
+
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Order</th>
+
+                                <th>Student</th>
+
+                                <th>Meal</th>
+
+                                <th>Hostel</th>
+
+                                <th>Total</th>
+
+                                <th>Status</th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+
+                            <tr>
+
+                                <td>
+                                    <strong>PB024</strong>
+                                </td>
+
+                                <td>
+                                    John Mwangi
+                                </td>
+
+                                <td>
+                                    Rice & Beans
+                                </td>
+
+                                <td>
+                                    Kijani Hostel
+                                </td>
+
+                                <td>
+                                    KSh 180
+                                </td>
+
+                                <td>
+                                    <span class="status pending">
+                                        Pending
+                                    </span>
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    <strong>PB023</strong>
+                                </td>
+
+                                <td>
+                                    Mary Achieng
+                                </td>
+
+                                <td>
+                                    Chicken
+                                </td>
+
+                                <td>
+                                    Mwangaza Hostel
+                                </td>
+
+                                <td>
+                                    KSh 200
+                                </td>
+
+                                <td>
+                                    <span class="status preparing">
+                                        Preparing
+                                    </span>
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    <strong>PB022</strong>
+                                </td>
+
+                                <td>
+                                    Kevin Otieno
+                                </td>
+
+                                <td>
+                                    Chapati & Beans
+                                </td>
+
+                                <td>
+                                    Bahari Hostel
+                                </td>
+
+                                <td>
+                                    KSh 100
+                                </td>
+
+                                <td>
+                                    <span class="status delivered">
+                                        Delivered
+                                    </span>
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    <strong>PB021</strong>
+                                </td>
+
+                                <td>
+                                    Brian Kamau
+                                </td>
+
+                                <td>
+                                    Pilau
+                                </td>
+
+                                <td>
+                                    Pwani Hostel
+                                </td>
+
+                                <td>
+                                    KSh 150
+                                </td>
+
+                                <td>
+                                    <span class="status delivered">
+                                        Delivered
+                                    </span>
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    <strong>PB020</strong>
+                                </td>
+
+                                <td>
+                                    Jane Wanjiku
+                                </td>
+
+                                <td>
+                                    Chips
+                                </td>
+
+                                <td>
+                                    Umoja Hostel
+                                </td>
+
+                                <td>
+                                    KSh 120
+                                </td>
+
+                                <td>
+                                    <span class="status preparing">
+                                        Preparing
+                                    </span>
+                                </td>
+
+                            </tr>
+
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================================
+                 TWO COLUMN SECTION
+            ================================= -->
+
+            <div class="dashboard-grid">
+
+
+                <!-- POPULAR MEALS -->
+
+                <section class="dashboard-card"
+                         id="menu-management">
+
+                    <div class="card-header">
+
+                        <div>
+
+                            <h2>Popular Meals</h2>
+
+                            <p>
+                                Today's best selling meals
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="popular-meal">
+
+                        <span>🍛</span>
+
+                        <div>
+
+                            <strong>Pilau</strong>
+
+                            <small>
+                                18 orders
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="popular-meal">
+
+                        <span>🍗</span>
+
+                        <div>
+
+                            <strong>Chicken</strong>
+
+                            <small>
+                                15 orders
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="popular-meal">
+
+                        <span>🫓</span>
+
+                        <div>
+
+                            <strong>Chapati & Beans</strong>
+
+                            <small>
+                                13 orders
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="popular-meal">
+
+                        <span>🍚</span>
+
+                        <div>
+
+                            <strong>Rice & Beef</strong>
+
+                            <small>
+                                10 orders
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                </section>
+
+
+                <!-- QUICK ACTIONS -->
+
+                <section class="dashboard-card">
+
+                    <div class="card-header">
+
+                        <div>
+
+                            <h2>Quick Actions</h2>
+
+                            <p>
+                                Manage PwaniBite
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="quick-actions">
+
+                        <a href="#menu-management">
+                            <span>🍛</span>
+                            Manage Menu
+                        </a>
+
+                        <a href="#orders">
+                            <span>🛒</span>
+                            View Orders
+                        </a>
+
+                        <a href="#customers">
+                            <span>👥</span>
+                            Customers
+                        </a>
+
+                        <a href="#feedback">
+                            <span>⭐</span>
+                            View Feedback
+                        </a>
+
+                    </div>
+
+                </section>
+
+
+            </div>
+
+
+            <!-- ================================
+                 DELIVERY STATUS
+            ================================= -->
+
+            <section class="dashboard-card"
+                     id="delivery">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <h2>Delivery Status</h2>
+
+                        <p>
+                            Today's delivery overview
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="delivery-status-container">
+
+
+                    <div class="delivery-status">
+
+                        <span>📦</span>
+
+                        <div>
+
+                            <strong>Pending</strong>
+
+                            <small>
+                                7 orders
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="delivery-status">
+
+                        <span>👨‍🍳</span>
+
+                        <div>
+
+                            <strong>Preparing</strong>
+
+                            <small>
+                                5 orders
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="delivery-status">
+
+                        <span>🚴</span>
+
+                        <div>
+
+                            <strong>Out for Delivery</strong>
+
+                            <small>
+                                3 orders
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="delivery-status">
+
+                        <span>✅</span>
+
+                        <div>
+
+                            <strong>Delivered</strong>
+
+                            <small>
+                                17 orders
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+            </section>
+
+
+            <!-- ================================
+                 FEEDBACK
+            ================================= -->
+
+            <section class="dashboard-card"
+                     id="feedback">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <h2>Recent Feedback</h2>
+
+                        <p>
+                            Latest comments from students
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="feedback-item">
+
+                    <div class="feedback-stars">
+                        ⭐⭐⭐⭐⭐
+                    </div>
+
+                    <p>
+                        "The food was delicious and
+                        delivery was fast."
+                    </p>
+
+                    <small>
+                        — Student feedback
+                    </small>
+
+                </div>
+
+
+                <div class="feedback-item">
+
+                    <div class="feedback-stars">
+                        ⭐⭐⭐⭐
+                    </div>
+
+                    <p>
+                        "Good service. I would like
+                        more meal options."
+                    </p>
+
+                    <small>
+                        — Student feedback
+                    </small>
+
+                </div>
+
+
+            </section>
+
+
+        </main>
+
+    </div>
+
+
+    <!-- FOOTER -->
+
+    <footer>
+
+        <p>
+            &copy; 2026 PwaniBite Admin Dashboard
+        </p>
+
+        <p>
+            Food Management • Orders • Delivery
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Load admin dashboard data
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (typeof isAuthenticated === 'function' && typeof isAdmin === 'function') {
+                if (!isAuthenticated() || !isAdmin()) {
+                    alert('Access restricted: Please log in as an administrator to view this page.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+            }
+            loadAdminDashboard();
+        });
+
+        async function loadAdminDashboard() {
+    let totalOrders = 0;
+    let pendingOrders = 0;
+    let deliveredOrders = 0;
+    let totalSales = 0;
+    let recentOrders = [];
+
+    if (typeof getDashboardStats === "function" && typeof getOrders === "function") {
+        try {
+            const statsRes = await getDashboardStats();
+            if (statsRes && statsRes.orders) {
+                totalOrders = statsRes.orders.total_orders || 0;
+                pendingOrders = statsRes.orders.pending_orders || 0;
+                deliveredOrders = statsRes.orders.delivered_orders || 0;
+                totalSales = statsRes.orders.total_sales || 0;
+            }
+            const ordersRes = await getOrders();
+            if (ordersRes && ordersRes.orders) {
+                recentOrders = ordersRes.orders;
+            }
+        } catch (e) {
+            console.warn("API dashboard load fallback to localStorage:", e.message);
+        }
+    }
+
+    if (totalOrders === 0 && recentOrders.length === 0) {
+        const localOrders = JSON.parse(localStorage.getItem("pwaniBiteOrders")) || [];
+        totalOrders = localOrders.length;
+        pendingOrders = localOrders.filter(o => o.status === "Pending").length;
+        deliveredOrders = localOrders.filter(o => o.status === "Delivered").length;
+        totalSales = localOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+        recentOrders = localOrders;
+    }
+
+    document.getElementById("total-orders").textContent = totalOrders;
+    document.getElementById("pending-orders").textContent = pendingOrders;
+    document.getElementById("delivered-orders").textContent = deliveredOrders;
+    document.getElementById("total-sales").textContent = "KSh " + Number(totalSales).toLocaleString();
+
+    const ordersTableBody = document.querySelector("table tbody");
+    if (ordersTableBody) {
+        if (recentOrders.length === 0) {
+            ordersTableBody.innerHTML = "<tr><td colspan=\"6\" style=\"text-align: center; color: #666; padding: 20px;\">No orders yet</td></tr>";
+        } else {
+            let rows = "";
+            recentOrders.slice(0, 5).forEach(order => {
+                const statusClass = (order.order_status || order.status || "pending").toLowerCase();
+                const numItems = order.items ? order.items.length : (order.cart ? order.cart.length : 1);
+                const orderNum = order.order_number || order.orderNumber || ("PB" + (order.order_id || ""));
+                const studentName = order.customer_name || order.name || "Student";
+                const hostel = order.hostel || "Hostel";
+                const total = order.total_amount || order.total || 0;
+                const status = order.order_status || order.status || "Pending";
+                rows += "<tr>" +
+                    "<td><strong>" + orderNum + "</strong></td>" +
+                    "<td>" + studentName + "</td>" +
+                    "<td>" + numItems + " item(s)</td>" +
+                    "<td>" + hostel + "</td>" +
+                    "<td>KSh " + total + "</td>" +
+                    "<td><span class=\"status " + statusClass + "\">" + status + "</span></td>" +
+                    "</tr>";
+            });
+            ordersTableBody.innerHTML = rows;
+        }
+    }
+}
+    </script>
+
+</body>
+
+</html>

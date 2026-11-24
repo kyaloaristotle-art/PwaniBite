@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Feedback | PwaniBite</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+</head>
+
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+
+        <div class="logo">
+            <img src="Images/Logo.jpg" alt="PwaniBite Logo - Food delivery service for Pwani University">
+            <span>PwaniBite</span>
+        </div>
+
+        <ul class="nav-links" role="menubar">
+            <li role="none"><a href="index.html" role="menuitem">Home</a></li>
+            <li role="none"><a href="menu.html" role="menuitem">Menu</a></li>
+            <li role="none"><a href="order.html" role="menuitem">Order Food</a></li>
+            <li role="none"><a href="delivery.html" role="menuitem">Delivery</a></li>
+            <li role="none"><a href="about.html" role="menuitem">About</a></li>
+            <li role="none"><a href="contact.html" role="menuitem">Contact</a></li>
+            <li role="none"><a href="feedback.html" role="menuitem" aria-current="page">Feedback</a></li>
+            <li role="none"><a href="cart.html" role="menuitem" class="cart-icon-link" aria-label="Shopping cart">
+                <span class="cart-icon-symbol">🛒</span>
+                <span class="cart-count">0</span>
+            </a></li>
+        </ul>
+
+    </nav>
+
+
+    <!-- Feedback Header -->
+    <section class="feedback-hero">
+
+        <h1>We Value Your Feedback</h1>
+
+        <p>
+            Tell us about your PwaniBite experience.
+        </p>
+
+    </section>
+
+
+    <!-- Feedback Section -->
+    <section class="feedback-section" aria-labelledby="feedback-heading">
+
+        <div class="feedback-container">
+
+            <h2 id="feedback-heading">Rate Your Experience</h2>
+
+            <p class="feedback-intro">
+                Your feedback helps us improve our food,
+                delivery and service for fellow comrades.
+            </p>
+
+
+            <form action="#" method="post" aria-labelledby="feedback-heading" novalidate>
+
+
+                <!-- Student Name -->
+
+                <div class="form-group">
+
+                    <label for="name">
+                        Your Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        placeholder="Enter your name"
+                        required
+                        aria-required="true"
+                        aria-describedby="feedback-name-help"
+                    >
+                    <span id="feedback-name-help" class="error-message">Please enter your name</span>
+
+                </div>
+
+
+                <!-- Order Number -->
+
+                <div class="form-group">
+
+                    <label for="order-number">
+                        Order Number
+                    </label>
+
+                    <input
+                        type="text"
+                        id="order-number"
+                        name="order-number"
+                        placeholder="e.g. PB001"
+                        aria-describedby="feedback-order-help"
+                    >
+                    <span id="feedback-order-help" class="error-message"></span>
+
+                </div>
+
+
+                <!-- Food Rating -->
+
+                <div class="rating-group" role="group" aria-labelledby="food-rating-label">
+
+                    <label id="food-rating-label">Food Quality</label>
+
+                    <div class="rating-options">
+
+                        <label for="food-rating-5">
+                            <input
+                                type="radio"
+                                id="food-rating-5"
+                                name="food-rating"
+                                value="5"
+                                required
+                                aria-required="true"
+                            >
+                            ⭐⭐⭐⭐⭐
+                        </label>
+
+                        <label for="food-rating-4">
+                            <input
+                                type="radio"
+                                id="food-rating-4"
+                                name="food-rating"
+                                value="4"
+                            >
+                            ⭐⭐⭐⭐
+                        </label>
+
+                        <label for="food-rating-3">
+                            <input
+                                type="radio"
+                                id="food-rating-3"
+                                name="food-rating"
+                                value="3"
+                            >
+                            ⭐⭐⭐
+                        </label>
+
+                        <label for="food-rating-2">
+                            <input
+                                type="radio"
+                                id="food-rating-2"
+                                name="food-rating"
+                                value="2"
+                            >
+                            ⭐⭐
+                        </label>
+
+                        <label for="food-rating-1">
+                            <input
+                                type="radio"
+                                id="food-rating-1"
+                                name="food-rating"
+                                value="1"
+                            >
+                            ⭐
+                        </label>
+
+                    </div>
+                    <span class="error-message" id="food-rating-help">Please rate the food quality</span>
+
+                </div>
+
+
+                <!-- Delivery Rating -->
+
+                <div class="rating-group" role="group" aria-labelledby="delivery-rating-label">
+
+                    <label id="delivery-rating-label">Delivery Service</label>
+
+                    <div class="rating-options">
+
+                        <label for="delivery-rating-5">
+                            <input
+                                type="radio"
+                                id="delivery-rating-5"
+                                name="delivery-rating"
+                                value="5"
+                                required
+                                aria-required="true"
+                            >
+                            ⭐⭐⭐⭐⭐
+                        </label>
+
+                        <label for="delivery-rating-4">
+                            <input
+                                type="radio"
+                                id="delivery-rating-4"
+                                name="delivery-rating"
+                                value="4"
+                            >
+                            ⭐⭐⭐⭐
+                        </label>
+
+                        <label for="delivery-rating-3">
+                            <input
+                                type="radio"
+                                id="delivery-rating-3"
+                                name="delivery-rating"
+                                value="3"
+                            >
+                            ⭐⭐⭐
+                        </label>
+
+                        <label for="delivery-rating-2">
+                            <input
+                                type="radio"
+                                id="delivery-rating-2"
+                                name="delivery-rating"
+                                value="2"
+                            >
+                            ⭐⭐
+                        </label>
+
+                        <label for="delivery-rating-1">
+                            <input
+                                type="radio"
+                                id="delivery-rating-1"
+                                name="delivery-rating"
+                                value="1"
+                            >
+                            ⭐
+                        </label>
+
+                    </div>
+                    <span class="error-message" id="delivery-rating-help">Please rate the delivery service</span>
+
+                </div>
+
+
+                <!-- Overall Rating -->
+
+                <div class="form-group">
+
+                    <label for="overall">
+                        Overall Experience
+                    </label>
+
+                    <select
+                        id="overall"
+                        name="overall"
+                        required
+                        aria-required="true"
+                        aria-describedby="overall-help"
+                    >
+
+                        <option value="">
+                            -- Select Rating --
+                        </option>
+
+                        <option value="5">
+                            Excellent ⭐⭐⭐⭐⭐
+                        </option>
+
+                        <option value="4">
+                            Very Good ⭐⭐⭐⭐
+                        </option>
+
+                        <option value="3">
+                            Good ⭐⭐⭐
+                        </option>
+
+                        <option value="2">
+                            Fair ⭐⭐
+                        </option>
+
+                        <option value="1">
+                            Poor ⭐
+                        </option>
+
+                    </select>
+                    <span id="overall-help" class="error-message">Please select an overall rating</span>
+
+                </div>
+
+
+                <!-- Comments -->
+
+                <div class="form-group">
+
+                    <label for="comments">
+                        Your Comments
+                    </label>
+
+                    <textarea
+                        id="comments"
+                        name="comments"
+                        rows="6"
+                        placeholder="Tell us what you liked or what we can improve..."
+                        required
+                        aria-required="true"
+                        aria-describedby="comments-help"
+                    ></textarea>
+                    <span id="comments-help" class="error-message">Please provide comments (at least 10 characters)</span>
+
+                </div>
+
+
+                <!-- Recommendation -->
+
+                <div class="recommend-group" role="group" aria-labelledby="recommend-label">
+
+                    <label id="recommend-label">
+                        Would you recommend PwaniBite
+                        to another comrade?
+                    </label>
+
+                    <div class="recommend-options">
+
+                        <label for="recommend-yes">
+                            <input
+                                type="radio"
+                                id="recommend-yes"
+                                name="recommend"
+                                value="yes"
+                                required
+                                aria-required="true"
+                            >
+                            Yes 👍
+                        </label>
+
+                        <label for="recommend-no">
+                            <input
+                                type="radio"
+                                id="recommend-no"
+                                name="recommend"
+                                value="no"
+                            >
+                            No 👎
+                        </label>
+
+                    </div>
+                    <span class="error-message" id="recommend-help">Please indicate if you would recommend PwaniBite</span>
+
+                </div>
+
+
+                <!-- Submit -->
+
+                <button
+                    type="submit"
+                    class="feedback-submit"
+                >
+                    Submit Feedback
+                </button>
+
+            </form>
+
+        </div>
+
+    </section>
+
+
+    <!-- Feedback Message -->
+
+    <section class="feedback-message">
+
+        <h2>Every Opinion Matters ❤️</h2>
+
+        <p>
+            Your suggestions help us make PwaniBite
+            better for the entire Pwani University community.
+        </p>
+
+    </section>
+
+
+    <!-- Call To Action -->
+
+    <section class="cta">
+
+        <h2>Hungry Again?</h2>
+
+        <p>
+            Check out today's meals and place your order.
+        </p>
+
+        <a href="menu.html" class="btn">
+            View Menu
+        </a>
+
+    </section>
+
+
+    <!-- Footer -->
+
+    <footer>
+
+        <p>
+            &copy; 2026 PwaniBite | Pwani University Canteen
+        </p>
+
+        <p>
+            Order Food • Hostel Delivery • Happy Comrades
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

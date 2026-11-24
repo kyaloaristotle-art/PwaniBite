@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart | PwaniBite</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+
+        <div class="logo">
+            <img src="Images/Logo.jpg" alt="PwaniBite Logo - Food delivery service for Pwani University">
+            <span>PwaniBite</span>
+        </div>
+
+        <ul class="nav-links" role="menubar">
+            <li role="none"><a href="index.html" role="menuitem">Home</a></li>
+            <li role="none"><a href="menu.html" role="menuitem">Menu</a></li>
+            <li role="none"><a href="order.html" role="menuitem">Order Food</a></li>
+            <li role="none"><a href="delivery.html" role="menuitem">Delivery</a></li>
+            <li role="none"><a href="about.html" role="menuitem">About</a></li>
+            <li role="none"><a href="contact.html" role="menuitem">Contact</a></li>
+            <li role="none"><a href="feedback.html" role="menuitem">Feedback</a></li>
+            <li role="none"><a href="cart.html" role="menuitem" class="cart-icon-link" aria-label="Shopping cart" aria-current="page">
+                <span class="cart-icon-symbol">🛒</span>
+                <span class="cart-count">0</span>
+            </a></li>
+        </ul>
+
+    </nav>
+
+    <!-- Cart Header -->
+    <section class="cart-header">
+
+        <h1>Your Shopping Cart</h1>
+
+        <p>
+            Review your items before checkout
+        </p>
+
+    </section>
+
+    <!-- Cart Section -->
+    <section class="cart-section">
+
+        <div class="cart-container">
+
+            <div class="cart-items">
+                <!-- Cart items will be populated by JavaScript -->
+            </div>
+
+            <div class="cart-summary">
+
+                <h2>Order Summary</h2>
+
+                <div class="summary-item">
+                    <span>Subtotal:</span>
+                    <span class="cart-total">KSh 0</span>
+                </div>
+
+                <div class="summary-item">
+                    <span>Delivery Fee:</span>
+                    <span>KSh 30</span>
+                </div>
+
+                <div class="summary-item total">
+                    <span>Total:</span>
+                    <span class="final-total">KSh 30</span>
+                </div>
+
+                <button class="btn checkout-btn" onclick="proceedToCheckout()">
+                    Proceed to Checkout
+                </button>
+
+                <button class="btn secondary-btn clear-cart-btn" onclick="clearCart()">
+                    Clear Cart
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Empty Cart Message -->
+    <section class="empty-cart-section" style="display: none;">
+
+        <div class="empty-cart-content">
+
+            <h2>Your Cart is Empty</h2>
+
+            <p>
+                Add some delicious meals to your cart!
+            </p>
+
+            <a href="menu.html" class="btn">
+                Browse Menu
+            </a>
+
+        </div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer>
+
+        <p>
+            &copy; 2026 PwaniBite | Pwani University Canteen
+        </p>
+
+        <p>
+            Order Food • Hostel Delivery • Happy Comrades
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Display cart on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            displayCart();
+            updateFinalTotal();
+        });
+
+        function updateFinalTotal() {
+            const cartTotal = getCartTotal();
+            const cartContainer = document.querySelector('.cart-section');
+            const emptySection = document.querySelector('.empty-cart-section');
+
+            if (cartTotal === 0) {
+                const finalTotalElement = document.querySelector('.final-total');
+                if (finalTotalElement) {
+                    finalTotalElement.textContent = 'KSh 0';
+                }
+                if (emptySection && cartContainer) {
+                    emptySection.style.display = 'block';
+                    cartContainer.style.display = 'none';
+                }
+                return;
+            }
+
+            if (emptySection && cartContainer) {
+                emptySection.style.display = 'none';
+                cartContainer.style.display = 'block';
+            }
+
+            const deliveryFee = 30;
+            const finalTotal = cartTotal + deliveryFee;
+            
+            const finalTotalElement = document.querySelector('.final-total');
+            if (finalTotalElement) {
+                finalTotalElement.textContent = 'KSh ' + finalTotal;
+            }
+        }
+
+        function proceedToCheckout() {
+            const cart = JSON.parse(localStorage.getItem('pwaniBiteCart')) || [];
+            
+            if (cart.length === 0) {
+                alert('Your cart is empty. Add items before checkout.');
+                return;
+            }
+            
+            // Redirect to order page with cart data
+            window.location.href = 'order.html';
+        }
+    </script>
+
+</body>
+</html>

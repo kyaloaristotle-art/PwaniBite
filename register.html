@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | PwaniBite</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+
+        <div class="logo">
+            <img src="Images/Logo.jpg" alt="PwaniBite Logo - Food delivery service for Pwani University">
+            <span>PwaniBite</span>
+        </div>
+
+        <ul class="nav-links" role="menubar">
+            <li role="none"><a href="index.html" role="menuitem">Home</a></li>
+            <li role="none"><a href="menu.html" role="menuitem">Menu</a></li>
+            <li role="none"><a href="order.html" role="menuitem">Order Food</a></li>
+            <li role="none"><a href="delivery.html" role="menuitem">Delivery</a></li>
+            <li role="none"><a href="about.html" role="menuitem">About</a></li>
+            <li role="none"><a href="contact.html" role="menuitem">Contact</a></li>
+            <li role="none"><a href="feedback.html" role="menuitem">Feedback</a></li>
+            <li role="none"><a href="cart.html" role="menuitem" class="cart-icon-link" aria-label="Shopping cart">
+                <span class="cart-icon-symbol">🛒</span>
+                <span class="cart-count">0</span>
+            </a></li>
+        </ul>
+
+    </nav>
+
+    <!-- Register Header -->
+    <section class="auth-header">
+
+        <h1>Create Your Account</h1>
+
+        <p>
+            Join PwaniBite to order food and track your deliveries
+        </p>
+
+    </section>
+
+    <!-- Register Section -->
+    <section class="auth-section">
+
+        <div class="auth-container">
+
+            <h2>Register</h2>
+
+            <form id="registerForm" aria-labelledby="register-heading">
+
+                <div class="form-group">
+
+                    <label for="register-name">
+                        Full Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="register-name"
+                        name="name"
+                        placeholder="Enter your full name"
+                        required
+                        aria-required="true"
+                        aria-describedby="register-name-help"
+                    >
+                    <span id="register-name-help" class="error-message">Please enter your name</span>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="register-email">
+                        Email Address
+                    </label>
+
+                    <input
+                        type="email"
+                        id="register-email"
+                        name="email"
+                        placeholder="Enter your email"
+                        required
+                        aria-required="true"
+                        aria-describedby="register-email-help"
+                    >
+                    <span id="register-email-help" class="error-message">Please enter a valid email</span>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="register-phone">
+                        Phone Number
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="register-phone"
+                        name="phone"
+                        placeholder="e.g. 0712345678"
+                        required
+                        aria-required="true"
+                        aria-describedby="register-phone-help"
+                        pattern="^(07|01)[0-9]{8}$"
+                    >
+                    <span id="register-phone-help" class="error-message">Please enter a valid Kenyan phone number</span>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="register-hostel">
+                        Hostel
+                    </label>
+
+                    <select
+                        id="register-hostel"
+                        name="hostel"
+                        required
+                        aria-required="true"
+                        aria-describedby="register-hostel-help"
+                    >
+
+                        <option value="">
+                            -- Select Hostel --
+                        </option>
+
+                        <option value="Kijani Hostel">
+                            Kijani Hostel
+                        </option>
+
+                        <option value="Mwangaza Hostel">
+                            Mwangaza Hostel
+                        </option>
+
+                        <option value="Bahari Hostel">
+                            Bahari Hostel
+                        </option>
+
+                        <option value="Pwani Hostel">
+                            Pwani Hostel
+                        </option>
+
+                        <option value="Umoja Hostel">
+                            Umoja Hostel
+                        </option>
+
+                    </select>
+                    <span id="register-hostel-help" class="error-message">Please select your hostel</span>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="register-password">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="register-password"
+                        name="password"
+                        placeholder="Create a password (min 6 characters)"
+                        required
+                        aria-required="true"
+                        aria-describedby="register-password-help"
+                    >
+                    <span id="register-password-help" class="error-message">Password must be at least 6 characters</span>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="register-confirm-password">
+                        Confirm Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="register-confirm-password"
+                        name="confirm-password"
+                        placeholder="Confirm your password"
+                        required
+                        aria-required="true"
+                        aria-describedby="register-confirm-password-help"
+                    >
+                    <span id="register-confirm-password-help" class="error-message">Passwords do not match</span>
+
+                </div>
+
+                <button
+                    type="submit"
+                    class="auth-submit"
+                >
+                    Register
+                </button>
+
+            </form>
+
+            <div class="auth-switch">
+                <p>Already have an account?</p>
+                <a href="login.html" class="btn">Login</a>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer>
+
+        <p>
+            &copy; 2026 PwaniBite | Pwani University Canteen
+        </p>
+
+        <p>
+            Order Food • Hostel Delivery • Happy Comrades
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const phone = document.getElementById('register-phone').value.trim();
+            const hostel = document.getElementById('register-hostel').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+            
+            // Validate name
+            if (name.length < 2) {
+                showError('register-name', 'register-name-help');
+                return;
+            } else {
+                clearError('register-name', 'register-name-help');
+            }
+            
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showError('register-email', 'register-email-help');
+                return;
+            } else {
+                clearError('register-email', 'register-email-help');
+            }
+            
+            // Validate phone
+            const phoneRegex = /^(07|01)[0-9]{8}$/;
+            if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+                showError('register-phone', 'register-phone-help');
+                return;
+            } else {
+                clearError('register-phone', 'register-phone-help');
+            }
+            
+            // Validate hostel
+            if (!hostel) {
+                showError('register-hostel', 'register-hostel-help');
+                return;
+            } else {
+                clearError('register-hostel', 'register-hostel-help');
+            }
+            
+            // Validate password
+            if (password.length < 6) {
+                showError('register-password', 'register-password-help');
+                return;
+            } else {
+                clearError('register-password', 'register-password-help');
+            }
+            
+            // Validate confirm password
+            if (password !== confirmPassword) {
+                showError('register-confirm-password', 'register-confirm-password-help');
+                return;
+            } else {
+                clearError('register-confirm-password', 'register-confirm-password-help');
+            }
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Registering...';
+            submitBtn.disabled = true;
+            
+            try {
+                // Call API register
+                const userData = {
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    hostel: hostel,
+                    password: password
+                };
+                
+                await register(userData);
+                
+                // Registration successful
+                window.location.href = getPostAuthRedirect();
+            } catch (error) {
+                // Registration failed
+                alert('Registration failed: ' + error.message);
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Order Food | PwaniBite</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+</head>
+
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+
+        <div class="logo">
+            <img src="Images/Logo.jpg" alt="PwaniBite Logo - Food delivery service for Pwani University">
+            <span>PwaniBite</span>
+        </div>
+
+        <ul class="nav-links" role="menubar">
+            <li role="none"><a href="index.html" role="menuitem">Home</a></li>
+            <li role="none"><a href="menu.html" role="menuitem">Menu</a></li>
+            <li role="none"><a href="order.html" role="menuitem" aria-current="page">Order Food</a></li>
+            <li role="none"><a href="delivery.html" role="menuitem">Delivery</a></li>
+            <li role="none"><a href="about.html" role="menuitem">About</a></li>
+            <li role="none"><a href="contact.html" role="menuitem">Contact</a></li>
+            <li role="none"><a href="feedback.html" role="menuitem">Feedback</a></li>
+            <li role="none"><a href="cart.html" role="menuitem" class="cart-icon-link" aria-label="Shopping cart">
+                <span class="cart-icon-symbol">🛒</span>
+                <span class="cart-count">0</span>
+            </a></li>
+        </ul>
+
+    </nav>
+
+
+    <!-- Order Header -->
+    <section class="order-header">
+
+        <h1>Place Your Order</h1>
+
+        <p>
+            Choose your meal and tell us where to deliver it.
+        </p>
+
+    </section>
+
+
+    <!-- Order Form -->
+    <section class="order-section" aria-labelledby="order-heading">
+
+        <div class="order-container">
+
+            <h2 id="order-heading">Food Order Form</h2>
+
+            <p class="order-note">
+                Please provide the correct hostel and room details
+                so our delivery team can find you easily.
+            </p>
+
+
+            <form action="#" method="post" aria-labelledby="order-heading" novalidate>
+
+                <!-- Student Details -->
+
+                <div class="form-group">
+
+                    <label for="name">
+                        Student Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        placeholder="Enter your name"
+                        required
+                        aria-required="true"
+                        aria-describedby="name-help"
+                    >
+                    <span id="name-help" class="error-message">Please enter your full name</span>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="phone">
+                        Phone Number
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        placeholder="e.g. 0712 345 678"
+                        required
+                        aria-required="true"
+                        aria-describedby="phone-help"
+                        pattern="^(07|01)[0-9]{8}$"
+                    >
+                    <span id="phone-help" class="error-message">Please enter a valid Kenyan phone number</span>
+
+                </div>
+
+
+                <!-- Hostel Details -->
+
+                <h3 class="form-heading">
+                    Hostel Delivery Details
+                </h3>
+
+
+                <div class="form-group">
+
+                    <label for="hostel">
+                        Select Hostel
+                    </label>
+
+                    <select id="hostel" name="hostel" required aria-required="true" aria-describedby="hostel-help">
+
+                        <option value="">
+                            -- Select Hostel --
+                        </option>
+
+                        <option value="Kijani Hostel">
+                            Kijani Hostel
+                        </option>
+
+                        <option value="Mwangaza Hostel">
+                            Mwangaza Hostel
+                        </option>
+
+                        <option value="Bahari Hostel">
+                            Bahari Hostel
+                        </option>
+
+                        <option value="Pwani Hostel">
+                            Pwani Hostel
+                        </option>
+
+                        <option value="Umoja Hostel">
+                            Umoja Hostel
+                        </option>
+
+                    </select>
+                    <span id="hostel-help" class="error-message">Please select your hostel</span>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="block">
+                        Block
+                    </label>
+
+                    <select id="block" name="block" required aria-required="true" aria-describedby="block-help">
+
+                        <option value="">
+                            -- Select Block --
+                        </option>
+
+                        <option value="Block A">
+                            Block A
+                        </option>
+
+                        <option value="Block B">
+                            Block B
+                        </option>
+
+                        <option value="Block C">
+                            Block C
+                        </option>
+
+                        <option value="Block D">
+                            Block D
+                        </option>
+
+                    </select>
+                    <span id="block-help" class="error-message">Please select your block</span>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="room">
+                        Room Number
+                    </label>
+
+                    <input
+                        type="text"
+                        id="room"
+                        name="room"
+                        placeholder="e.g. A204"
+                        required
+                        aria-required="true"
+                        aria-describedby="room-help"
+                    >
+                    <span id="room-help" class="error-message">Please enter your room number</span>
+
+                </div>
+
+
+                <!-- Food Selection -->
+
+                <h3 class="form-heading">
+                    Order Details
+                </h3>
+
+                <div class="form-group">
+
+                    <label for="order-summary">
+                        Order Summary
+                    </label>
+
+                    <div id="order-summary" class="order-summary-box">
+                        <p id="cart-message">Your cart is empty. <a href="menu.html">Add items from menu</a></p>
+                    </div>
+
+                </div>
+
+
+                <!-- Special Instructions -->
+
+                <div class="form-group">
+
+                    <label for="message">
+                        Special Instructions
+                    </label>
+
+                    <textarea
+                        id="message"
+                        name="message"
+                        rows="4"
+                        placeholder="Any special request for your order?"
+                        aria-describedby="message-help"
+                    ></textarea>
+                    <span id="message-help" class="error-message"></span>
+
+                </div>
+
+
+                <!-- Delivery Time -->
+
+                <div class="form-group">
+
+                    <label for="time">
+                        Preferred Delivery Time
+                    </label>
+
+                    <select id="time" name="time" required aria-required="true" aria-describedby="time-help">
+
+                        <option value="">
+                            -- Select Time --
+                        </option>
+
+                        <option value="7:00 AM - 8:00 AM">
+                            7:00 AM - 8:00 AM
+                        </option>
+
+                        <option value="8:00 AM - 9:00 AM">
+                            8:00 AM - 9:00 AM
+                        </option>
+
+                        <option value="9:00 AM - 10:00 AM">
+                            9:00 AM - 10:00 AM
+                        </option>
+
+                        <option value="10:00 AM - 11:00 AM">
+                            10:00 AM - 11:00 AM
+                        </option>
+
+                        <option value="11:00 AM - 12:00 PM">
+                            11:00 AM - 12:00 PM
+                            </option>
+
+                        <option value="12:00 PM - 1:00 PM">
+                            12:00 PM - 1:00 PM
+                        </option>
+                        <option value="1:00 PM - 2:00 PM">
+                            1:00 PM - 2:00 PM
+                        </option>
+
+                        <option value="2:00 PM - 3:00 PM">
+                            2:00 PM - 3:00 PM
+                        </option>
+
+                        <option value="5:00 PM - 6:00 PM">
+                            5:00 PM - 6:00 PM
+                        </option>
+
+                        <option value="6:00 PM - 7:00 PM">
+                            6:00 PM - 7:00 PM
+                        </option>
+
+                        <option value="7:00 PM - 8:00 PM">
+                            7:00 PM - 8:00 PM
+                        </option>
+
+                    </select>
+                    <span id="time-help" class="error-message">Please select a delivery time</span>
+
+                </div>
+
+                <!-- Payment Method Selection -->
+                <h3 class="form-heading">
+                    Payment Method
+                </h3>
+
+                <div class="form-group">
+                    <div class="payment-method-selector" style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                        <label id="label-pay-mpesa" class="payment-option selected" style="flex: 1; min-width: 220px; border: 2px solid #063b2f; padding: 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; background: #eef7f4; transition: 0.2s;">
+                            <input type="radio" name="payment-method" value="M-Pesa" id="pay-mpesa" checked style="accent-color: #063b2f; width: 18px; height: 18px;">
+                            <div>
+                                <strong style="display: block; color: #063b2f; font-size: 15px;">🟢 Lipa na M-Pesa</strong>
+                                <small style="display: block; color: #555;">Instant STK Push PIN prompt</small>
+                            </div>
+                        </label>
+                        <label id="label-pay-cash" class="payment-option" style="flex: 1; min-width: 220px; border: 1px solid #ccc; padding: 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; background: #fff; transition: 0.2s;">
+                            <input type="radio" name="payment-method" value="Cash" id="pay-cash" style="accent-color: #063b2f; width: 18px; height: 18px;">
+                            <div>
+                                <strong style="display: block; color: #333; font-size: 15px;">💵 Cash on Delivery</strong>
+                                <small style="display: block; color: #555;">Pay rider at your hostel room</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="mpesa-phone-group">
+                    <label for="mpesa-phone">
+                        M-Pesa Mobile Number
+                    </label>
+                    <input
+                        type="tel"
+                        id="mpesa-phone"
+                        name="mpesa-phone"
+                        placeholder="e.g. 0712 345 678"
+                    >
+                    <small id="mpesa-help" style="color: #666; display: block; margin-top: 5px;">We will send an STK prompt to this phone number to complete payment.</small>
+                    <span id="mpesa-phone-help" class="error-message">Please enter a valid Safaricom phone number</span>
+                </div>
+
+                <!-- Submit -->
+
+                <button
+                    type="submit"
+                    class="order-submit"
+                >
+                    Place Order & Pay
+                </button>
+
+            </form>
+
+        </div>
+
+    </section>
+
+
+    <!-- Delivery Notice -->
+
+    <section class="delivery-notice">
+
+        <h2>🏠 Hostel Delivery</h2>
+
+        <p>
+            Once your order is prepared, our delivery team
+            will bring it to your selected hostel and room.
+        </p>
+
+    </section>
+
+
+    <!-- Footer -->
+
+    <footer>
+
+        <p>
+            &copy; 2026 PwaniBite | Pwani University Canteen
+        </p>
+
+        <p>
+            Order Food • Hostel Delivery • Happy Comrades
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto fill user details if logged in
+            if (typeof getCurrentUserFromStorage === 'function') {
+                const user = getCurrentUserFromStorage();
+                if (user && user.name) {
+                    const nameField = document.getElementById('name');
+                    const phoneField = document.getElementById('phone');
+                    const mpesaField = document.getElementById('mpesa-phone');
+                    const hostelField = document.getElementById('hostel');
+                    const blockField = document.getElementById('block');
+                    const roomField = document.getElementById('room');
+
+                    if (nameField && !nameField.value) nameField.value = user.name || '';
+                    if (phoneField && !phoneField.value) phoneField.value = user.phone || '';
+                    if (mpesaField && !mpesaField.value) mpesaField.value = user.phone || '';
+                    if (hostelField && user.hostel) hostelField.value = user.hostel;
+                    if (blockField && user.block) blockField.value = user.block;
+                    if (roomField && user.room) roomField.value = user.room;
+                }
+            }
+
+            // Sync phone to mpesa-phone if changed
+            const phoneInput = document.getElementById('phone');
+            const mpesaInput = document.getElementById('mpesa-phone');
+            if (phoneInput && mpesaInput) {
+                phoneInput.addEventListener('input', function() {
+                    if (!mpesaInput.dataset.manualEdit) {
+                        mpesaInput.value = this.value;
+                    }
+                });
+                mpesaInput.addEventListener('input', function() {
+                    this.dataset.manualEdit = 'true';
+                });
+            }
+
+            // Payment radio change handler
+            const mpesaRadio = document.getElementById('pay-mpesa');
+            const cashRadio = document.getElementById('pay-cash');
+            const mpesaGroup = document.getElementById('mpesa-phone-group');
+            const labelMpesa = document.getElementById('label-pay-mpesa');
+            const labelCash = document.getElementById('label-pay-cash');
+
+            function updatePaymentUI() {
+                if (mpesaRadio && mpesaRadio.checked) {
+                    if (mpesaGroup) mpesaGroup.style.display = 'block';
+                    if (labelMpesa) {
+                        labelMpesa.style.border = '2px solid #063b2f';
+                        labelMpesa.style.background = '#eef7f4';
+                    }
+                    if (labelCash) {
+                        labelCash.style.border = '1px solid #ccc';
+                        labelCash.style.background = '#fff';
+                    }
+                } else {
+                    if (mpesaGroup) mpesaGroup.style.display = 'none';
+                    if (labelCash) {
+                        labelCash.style.border = '2px solid #063b2f';
+                        labelCash.style.background = '#eef7f4';
+                    }
+                    if (labelMpesa) {
+                        labelMpesa.style.border = '1px solid #ccc';
+                        labelMpesa.style.background = '#fff';
+                    }
+                }
+            }
+
+            if (mpesaRadio) mpesaRadio.addEventListener('change', updatePaymentUI);
+            if (cashRadio) cashRadio.addEventListener('change', updatePaymentUI);
+        });
+    </script>
+</body>
+
+</html>
