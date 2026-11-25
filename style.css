@@ -14,7 +14,14 @@ html {
 
 body {
     font-family: Arial, Helvetica, sans-serif;
-    background: #f5f7f6;
+    background-color: #f5f7f6;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.82)),
+        url("Images/background.png");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
     color: #222;
     line-height: 1.6;
 }
@@ -704,11 +711,59 @@ footer p {
 
 /* Food image */
 
+.menu-card-media {
+    position: relative;
+}
+
 .menu-card img {
     width: 100%;
     height: 230px;
 
     object-fit: cover;
+
+    display: block;
+}
+
+/* Overlaid badges on the food image */
+
+.card-tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+
+    background: rgba(6, 59, 47, 0.9);
+    color: white;
+
+    padding: 4px 14px;
+    border-radius: 20px;
+
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.card-price {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+
+    background: #f6c343;
+    color: #063b2f;
+
+    padding: 4px 14px;
+    border-radius: 20px;
+
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.card-stock {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+
+    margin-bottom: 0;
 }
 
 
@@ -1544,7 +1599,7 @@ footer p {
 
     padding: 50px 20px;
 
-    background: #eef3f0;
+    background: #eef7f4;
 }
 
 .delivery-notice h2 {
@@ -1704,7 +1759,7 @@ footer p {
 
 .delivery-info {
     padding: 70px 6%;
-    background: #eef3f0;
+    background: #eef7f4;
 }
 
 .delivery-info-content {
@@ -1980,7 +2035,7 @@ footer p {
 
 .why-section {
     padding: 70px 6%;
-    background: #eef3f0;
+    background: #eef7f4;
     text-align: center;
 }
 
@@ -2240,7 +2295,7 @@ footer p {
 .quick-help {
     text-align: center;
 
-    background: #eef3f0;
+    background: #eef7f4;
 
     padding: 60px 20px;
 }
@@ -2404,7 +2459,7 @@ footer p {
 }
 
 .rating-options label:hover {
-    background: #eef3f0;
+    background: #eef7f4;
 }
 
 .rating-options input {
@@ -2519,7 +2574,7 @@ footer p {
 
     padding: 60px 20px;
 
-    background: #eef3f0;
+    background: #eef7f4;
 }
 
 .feedback-message h2 {
@@ -2821,7 +2876,7 @@ footer p {
 
     height: 55px;
 
-    background: #eef3f0;
+    background: #eef7f4;
 
     border-radius: 10px;
 
@@ -2920,7 +2975,7 @@ table {
 table th {
     text-align: left;
 
-    background: #eef3f0;
+    background: #eef7f4;
 
     color: #063b2f;
 
@@ -2940,7 +2995,7 @@ table td {
 }
 
 table tr:hover {
-    background: #fafcfa;
+    background: #f5f7f6;
 }
 
 
@@ -2967,7 +3022,7 @@ table tr:hover {
 }
 
 .status.preparing {
-    background: #dbeafe;
+    background: #e6f4ea;
 
     color: #1e40af;
 }
@@ -3231,7 +3286,7 @@ table tr:hover {
 .order-number {
     text-align: center;
     padding: 20px;
-    background: #eef3f0;
+    background: #eef7f4;
     border-radius: 8px;
     margin-bottom: 20px;
 }
@@ -3658,7 +3713,7 @@ table tr:hover {
 }
 
 .btn-pay:hover {
-    background: #059669;
+    background: #063b2f;
 }
 
 /* =========================================
@@ -3667,14 +3722,14 @@ table tr:hover {
 
 .mpesa-logo {
     font-weight: 900;
-    color: #009944;
+    color: #063b2f;
     font-size: 24px;
 }
 
 .mpesa-phone-input {
     width: 100%;
     padding: 14px;
-    border: 2px solid #009944;
+    border: 2px solid #063b2f;
     border-radius: 8px;
     font-size: 16px;
     font-weight: bold;
@@ -3699,7 +3754,7 @@ table tr:hover {
     width: 45px;
     height: 45px;
     border: 4px solid #e2e8f0;
-    border-top: 4px solid #009944;
+    border-top: 4px solid #063b2f;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 20px auto;
@@ -3775,8 +3830,8 @@ table tr:hover {
 /* Status badge additions */
 .status.out-for-delivery,
 .status.in-transit {
-    background: #e0f2fe;
-    color: #0369a1;
+    background: #eef7f4;
+    color: #065f46;
 }
 
 .status.picked-up,
@@ -3801,4 +3856,52 @@ table tr:hover {
     0% { transform: scale(1); }
     50% { transform: scale(1.18); }
     100% { transform: scale(1); }
+}
+
+
+/* ================================
+   WHATSAPP FLOAT BUTTON
+================================ */
+
+#whatsapp-float {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #25d366;
+    color: white;
+    text-decoration: none;
+    padding: 12px 18px;
+    border-radius: 50px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    font-weight: bold;
+    font-size: 14px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#whatsapp-float:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    color: white;
+}
+
+#whatsapp-float svg {
+    flex-shrink: 0;
+}
+
+#whatsapp-float .wa-label {
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    #whatsapp-float .wa-label {
+        display: none;
+    }
+    #whatsapp-float {
+        padding: 12px;
+        border-radius: 50%;
+    }
 }

@@ -1,6 +1,6 @@
 from django.urls import include, path, re_path
 from django.conf import settings
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponsePermanentRedirect
 from pathlib import Path
 import re
 
@@ -10,6 +10,12 @@ def frontend_file(request, path=""):
     if not settings.DEBUG:
         raise Http404
     relative = Path(path) if path else Path("index.html")
+    # A trailing slash (e.g. /menu.html/) breaks relative asset URLs; send
+    # the browser to the canonical path instead of serving the file anyway.
+    if path.endswith("/"):
+        stripped = path.rstrip("/")
+        if stripped and (settings.FRONTEND_ROOT / stripped).is_file():
+            return HttpResponsePermanentRedirect("/" + stripped)
     blocked_parts = {"backend", ".git", ".vscode", ".aws", ".codex", ".agents", "node_modules", "__pycache__", ".gitignore"}
     if any(part.lower() in blocked_parts or part.lower().startswith(".env") for part in relative.parts):
         raise Http404

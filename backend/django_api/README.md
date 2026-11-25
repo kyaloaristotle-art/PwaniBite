@@ -30,6 +30,24 @@ The API reads `backend/.env`. Set a valid MySQL account and password there. It e
 
 `DB_ENGINE=sqlite` is available for isolated development, but the MySQL tables must still be created before the API endpoints can be used. SQLite is not an automatic import of the MySQL data.
 
+## Contact messages table
+
+The `POST /api/contact` endpoint (used by the contact page) stores submissions in a `contact_messages` table that is not part of the original schema. Create it once in MySQL:
+
+```sql
+CREATE TABLE IF NOT EXISTS contact_messages (
+    contact_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(15) NULL,
+    subject VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+Admins can list submissions with `GET /api/contact`.
+
 ## Authentication
 
 - `POST /api/auth/register` creates customer accounts.

@@ -464,6 +464,8 @@
                     </div>
 
 
+                    <div id="popular-meals-list">
+
                     <div class="popular-meal">
 
                         <span>🍛</span>
@@ -531,6 +533,8 @@
 
                     </div>
 
+                    </div>
+
 
                 </section>
 
@@ -556,7 +560,7 @@
 
                     <div class="quick-actions">
 
-                        <a href="#menu-management">
+                        <a href="menu-management.html">
                             <span>🍛</span>
                             Manage Menu
                         </a>
@@ -617,8 +621,8 @@
 
                             <strong>Pending</strong>
 
-                            <small>
-                                7 orders
+                            <small id="dl-pending">
+                                0 orders
                             </small>
 
                         </div>
@@ -634,8 +638,8 @@
 
                             <strong>Preparing</strong>
 
-                            <small>
-                                5 orders
+                            <small id="dl-preparing">
+                                0 orders
                             </small>
 
                         </div>
@@ -651,8 +655,8 @@
 
                             <strong>Out for Delivery</strong>
 
-                            <small>
-                                3 orders
+                            <small id="dl-out">
+                                0 orders
                             </small>
 
                         </div>
@@ -668,8 +672,8 @@
 
                             <strong>Delivered</strong>
 
-                            <small>
-                                17 orders
+                            <small id="dl-delivered">
+                                0 orders
                             </small>
 
                         </div>
@@ -703,6 +707,8 @@
 
                 </div>
 
+
+                <div id="feedback-list">
 
                 <div class="feedback-item">
 
@@ -739,6 +745,66 @@
 
                 </div>
 
+                </div>
+
+
+            </section>
+
+
+            <!-- ================================
+                 CUSTOMERS
+            ================================= -->
+
+            <section class="dashboard-card"
+                     id="customers">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <h2>Customers</h2>
+
+                        <p>
+                            Registered users and their roles
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Name</th>
+
+                                <th>Email</th>
+
+                                <th>Phone</th>
+
+                                <th>Hostel</th>
+
+                                <th>Role</th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody id="customers-table-body">
+
+                            <tr><td colspan="5" style="text-align: center; color: #666; padding: 20px;">Loading customers...</td></tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
 
             </section>
 
@@ -764,7 +830,10 @@
 
     <script src="script.js"></script>
     <script>
-        // Load admin dashboard data
+        const esc = (typeof escapeHtml === 'function') ? escapeHtml : (v) => String(v == null ? '' : v);
+        const ORDER_STATUSES = ['Pending', 'Preparing', 'Out for Delivery', 'Delivered', 'Cancelled'];
+        const USER_ROLES = ['customer', 'admin', 'delivery', 'staff'];
+
         document.addEventListener('DOMContentLoaded', async function() {
             if (typeof isAuthenticated === 'function' && typeof isAdmin === 'function') {
                 if (!isAuthenticated() || !isAdmin()) {
@@ -773,75 +842,176 @@
                     return;
                 }
             }
-            loadAdminDashboard();
+            await loadAdminDashboard();
         });
 
         async function loadAdminDashboard() {
-    let totalOrders = 0;
-    let pendingOrders = 0;
-    let deliveredOrders = 0;
-    let totalSales = 0;
-    let recentOrders = [];
+            const [statsRes, ordersRes, popularRes, feedbackRes, usersRes] = await Promise.allSettled([
+                typeof getDashboardStats === 'function' ? getDashboardStats() : Promise.reject(new Error('no api')),
+                typeof getOrders === 'function' ? getOrders() : Promise.reject(new Error('no api')),
+                typeof getPopularItems === 'function' ? getPopularItems(5) : Promise.reject(new Error('no api')),
+                typeof getFeedback === 'function' ? getFeedback() : Promise.reject(new Error('no api')),
+                typeof getUsers === 'function' ? getUsers() : Promise.reject(new Error('no api'))
+            ]);
 
-    if (typeof getDashboardStats === "function" && typeof getOrders === "function") {
-        try {
-            const statsRes = await getDashboardStats();
-            if (statsRes && statsRes.orders) {
-                totalOrders = statsRes.orders.total_orders || 0;
-                pendingOrders = statsRes.orders.pending_orders || 0;
-                deliveredOrders = statsRes.orders.delivered_orders || 0;
-                totalSales = statsRes.orders.total_sales || 0;
-            }
-            const ordersRes = await getOrders();
-            if (ordersRes && ordersRes.orders) {
-                recentOrders = ordersRes.orders;
-            }
-        } catch (e) {
-            console.warn("API dashboard load fallback to localStorage:", e.message);
+            renderStats(statsRes.status === 'fulfilled' ? statsRes.value : null);
+            renderOrders(ordersRes.status === 'fulfilled' ? ordersRes.value : null);
+            renderDeliveryCounts(statsRes.status === 'fulfilled' ? statsRes.value : null);
+            renderPopularMeals(popularRes.status === 'fulfilled' ? popularRes.value : null);
+            renderFeedback(feedbackRes.status === 'fulfilled' ? feedbackRes.value : null);
+            renderCustomers(usersRes.status === 'fulfilled' ? usersRes.value : null);
         }
-    }
 
-    if (totalOrders === 0 && recentOrders.length === 0) {
-        const localOrders = JSON.parse(localStorage.getItem("pwaniBiteOrders")) || [];
-        totalOrders = localOrders.length;
-        pendingOrders = localOrders.filter(o => o.status === "Pending").length;
-        deliveredOrders = localOrders.filter(o => o.status === "Delivered").length;
-        totalSales = localOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-        recentOrders = localOrders;
-    }
+        function renderStats(statsRes) {
+            const orders = (statsRes && statsRes.orders) || {};
+            document.getElementById('total-orders').textContent = orders.total_orders || 0;
+            document.getElementById('pending-orders').textContent = orders.pending_orders || 0;
+            document.getElementById('delivered-orders').textContent = orders.delivered_orders || 0;
+            document.getElementById('total-sales').textContent =
+                'KSh ' + Number(orders.total_sales || 0).toLocaleString();
+        }
 
-    document.getElementById("total-orders").textContent = totalOrders;
-    document.getElementById("pending-orders").textContent = pendingOrders;
-    document.getElementById("delivered-orders").textContent = deliveredOrders;
-    document.getElementById("total-sales").textContent = "KSh " + Number(totalSales).toLocaleString();
+        function renderDeliveryCounts(statsRes) {
+            const orders = (statsRes && statsRes.orders) || {};
+            const set = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = (n || 0) + ' orders'; };
+            set('dl-pending', orders.pending_orders);
+            set('dl-preparing', orders.preparing_orders);
+            set('dl-out', orders.out_for_delivery);
+            set('dl-delivered', orders.delivered_orders);
+        }
 
-    const ordersTableBody = document.querySelector("table tbody");
-    if (ordersTableBody) {
-        if (recentOrders.length === 0) {
-            ordersTableBody.innerHTML = "<tr><td colspan=\"6\" style=\"text-align: center; color: #666; padding: 20px;\">No orders yet</td></tr>";
-        } else {
-            let rows = "";
-            recentOrders.slice(0, 5).forEach(order => {
-                const statusClass = (order.order_status || order.status || "pending").toLowerCase();
-                const numItems = order.items ? order.items.length : (order.cart ? order.cart.length : 1);
-                const orderNum = order.order_number || order.orderNumber || ("PB" + (order.order_id || ""));
-                const studentName = order.customer_name || order.name || "Student";
-                const hostel = order.hostel || "Hostel";
-                const total = order.total_amount || order.total || 0;
-                const status = order.order_status || order.status || "Pending";
-                rows += "<tr>" +
-                    "<td><strong>" + orderNum + "</strong></td>" +
-                    "<td>" + studentName + "</td>" +
-                    "<td>" + numItems + " item(s)</td>" +
-                    "<td>" + hostel + "</td>" +
-                    "<td>KSh " + total + "</td>" +
-                    "<td><span class=\"status " + statusClass + "\">" + status + "</span></td>" +
-                    "</tr>";
+        function renderOrders(ordersRes) {
+            const tbody = document.querySelector('#orders .table-container tbody');
+            if (!tbody) return;
+            const orders = (ordersRes && ordersRes.orders) || [];
+
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666; padding: 20px;">No orders yet</td></tr>';
+                return;
+            }
+
+            let rows = '';
+            orders.slice(0, 20).forEach(order => {
+                const status = order.order_status || 'Pending';
+                const statusClass = String(status).toLowerCase().replace(/\s+/g, '-');
+                const items = Array.isArray(order.items) ? order.items : [];
+                const mealText = items.length
+                    ? esc(items[0].food_name) + (items.length > 1 ? ' +' + (items.length - 1) + ' more' : '')
+                    : '—';
+                const options = ORDER_STATUSES.map(s =>
+                    `<option value="${s}" ${s === status ? 'selected' : ''}>${s}</option>`
+                ).join('');
+
+                rows += '<tr>' +
+                    '<td><strong>' + esc(order.order_number || ('#' + order.order_id)) + '</strong></td>' +
+                    '<td>' + esc(order.customer_name || 'Student') + '</td>' +
+                    '<td>' + mealText + '</td>' +
+                    '<td>' + esc(order.hostel || '—') + '</td>' +
+                    '<td>KSh ' + Number(order.total_amount || 0).toLocaleString() + '</td>' +
+                    '<td><select class="status-select status ' + statusClass + '" data-order-id="' + order.order_id + '" onchange="adminUpdateOrderStatus(this)">' + options + '</select></td>' +
+                    '</tr>';
             });
-            ordersTableBody.innerHTML = rows;
+            tbody.innerHTML = rows;
         }
-    }
-}
+
+        async function adminUpdateOrderStatus(selectEl) {
+            const orderId = selectEl.dataset.orderId;
+            const newStatus = selectEl.value;
+            try {
+                if (typeof updateOrderStatus === 'function') {
+                    await updateOrderStatus(orderId, newStatus);
+                }
+                selectEl.className = 'status-select status ' + newStatus.toLowerCase().replace(/\s+/g, '-');
+            } catch (err) {
+                alert('Could not update order status: ' + (err.message || 'Please try again.'));
+                loadAdminDashboard();
+            }
+        }
+        window.adminUpdateOrderStatus = adminUpdateOrderStatus;
+
+        function renderPopularMeals(popularRes) {
+            const container = document.getElementById('popular-meals-list');
+            if (!container) return;
+            const items = (popularRes && popularRes.items) || [];
+
+            if (items.length === 0) {
+                container.innerHTML = '<p style="color:#666; padding:10px 0;">No sales data yet</p>';
+                return;
+            }
+
+            const icons = ['🍛', '🍗', '🫓', '🍚', '🥤'];
+            container.innerHTML = items.map((item, i) => `
+                <div class="popular-meal">
+                    <span>${icons[i % icons.length]}</span>
+                    <div>
+                        <strong>${esc(item.food_name)}</strong>
+                        <small>${item.total_ordered} orders</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderFeedback(feedbackRes) {
+            const container = document.getElementById('feedback-list');
+            if (!container) return;
+            const all = (feedbackRes && feedbackRes.feedback) || [];
+            const latest = all.slice(0, 3);
+
+            if (latest.length === 0) {
+                container.innerHTML = '<p style="color:#666; padding:10px 0;">No feedback yet</p>';
+                return;
+            }
+
+            container.innerHTML = latest.map(f => {
+                const rating = Math.max(0, Math.min(5, parseInt(f.overall_rating) || 0));
+                const stars = '⭐'.repeat(rating) + '☆'.repeat(5 - rating);
+                return `
+                    <div class="feedback-item">
+                        <div class="feedback-stars">${stars}</div>
+                        <p>"${esc(f.comments || 'No comment')}"</p>
+                        <small>— ${esc(f.customer_name || 'Student')}${f.order_number ? ' · ' + esc(f.order_number) : ''}</small>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderCustomers(usersRes) {
+            const tbody = document.getElementById('customers-table-body');
+            if (!tbody) return;
+            const users = (usersRes && usersRes.users) || [];
+
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666; padding: 20px;">No users found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = users.map(u => {
+                const options = USER_ROLES.map(r =>
+                    `<option value="${r}" ${r === u.role ? 'selected' : ''}>${r}</option>`
+                ).join('');
+                return '<tr>' +
+                    '<td><strong>' + esc(u.name) + '</strong></td>' +
+                    '<td>' + esc(u.email) + '</td>' +
+                    '<td>' + esc(u.phone || '—') + '</td>' +
+                    '<td>' + esc(u.hostel || '—') + '</td>' +
+                    '<td><select class="status-select" data-user-id="' + u.user_id + '" onchange="adminUpdateUserRole(this)">' + options + '</select></td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        async function adminUpdateUserRole(selectEl) {
+            const userId = selectEl.dataset.userId;
+            const newRole = selectEl.value;
+            try {
+                if (typeof updateUser === 'function') {
+                    await updateUser(userId, { role: newRole });
+                }
+            } catch (err) {
+                alert('Could not update user role: ' + (err.message || 'Please try again.'));
+                loadAdminDashboard();
+            }
+        }
+        window.adminUpdateUserRole = adminUpdateUserRole;
     </script>
 
 </body>

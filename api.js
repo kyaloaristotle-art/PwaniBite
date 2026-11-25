@@ -25,13 +25,39 @@ function getHeaders() {
 
 // Helper function to handle API responses
 async function handleResponse(response) {
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.error || data.message || 'An error occurred');
+    let data = null;
+    try {
+        data = await response.json();
+    } catch (e) {
+        data = null;
     }
 
-    return data;
+    if (!response.ok) {
+        let message = 'An error occurred';
+        if (data && typeof data === 'object') {
+            if (typeof data.error === 'string') {
+                message = data.error;
+            } else if (typeof data.detail === 'string') {
+                message = data.detail;
+            } else if (typeof data.message === 'string') {
+                message = data.message;
+            } else {
+                // DRF-style field errors: { field: ["msg", ...] }
+                for (const key of Object.keys(data)) {
+                    const value = data[key];
+                    if (Array.isArray(value) && value.length && typeof value[0] === 'string') {
+                        message = value.join(' ');
+                        break;
+                    }
+                }
+            }
+        } else {
+            message = `Request failed (HTTP ${response.status})`;
+        }
+        throw new Error(message);
+    }
+
+    return data === null ? {} : data;
 }
 
 // ============ AUTHENTICATION ============
@@ -126,6 +152,17 @@ async function addFood(foodData) {
         body: JSON.stringify(foodData)
     });
 
+    return await handleResponse(response);
+}
+
+async function uploadFoodImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await fetch(`${API_BASE_URL}/food/upload-image`, {
+        method: 'POST', headers, body: formData
+    });
     return await handleResponse(response);
 }
 
@@ -477,6 +514,42 @@ async function getHourlyOrders(date = null) {
     return await handleResponse(response);
 }
 
+// ============ CONTACT ============
+
+// Submit a contact message (public endpoint)
+async function submitContact(contactData) {
+    const response = await fetch(`${API_BASE_URL}/contact`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(contactData)
+    });
+
+    return await handleResponse(response);
+}
+
+// ============ USERS (Admin Only) ============
+
+// Get all users (admin only)
+async function getUsers() {
+    const response = await fetch(`${API_BASE_URL}/users`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    return await handleResponse(response);
+}
+
+// Update a user (admin only)
+async function updateUser(id, userData) {
+    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(userData)
+    });
+
+    return await handleResponse(response);
+}
+
 // ============ UTILITY FUNCTIONS ============
 
 // Check if user is authenticated
@@ -510,7 +583,7 @@ function getCurrentUserFromStorage() {
 // Only allow the known same-site checkout return destination after auth.
 function getPostAuthRedirect() {
     const returnTo = new URLSearchParams(window.location.search).get('returnTo');
-    return returnTo === 'order.html' ? 'order.html' : 'index.html';
+    return ['order.html', 'feedback.html'].includes(returnTo) ? returnTo : 'index.html';
 }
 
 // ============ M-PESA PAYMENT ============
@@ -597,6 +670,9 @@ if (typeof module !== 'undefined' && module.exports) {
         initiateMpesaSTKPush,
         checkMpesaPaymentStatus,
         queryMpesaTransaction,
+        submitContact,
+        getUsers,
+        updateUser,
         isAuthenticated,
         isAdmin,
         isCustomer,

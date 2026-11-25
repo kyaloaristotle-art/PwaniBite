@@ -1,3 +1,14 @@
+// Escape user/API-provided strings before inserting into HTML
+function escapeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+window.escapeHtml = escapeHtml;
+
 // Mobile Hamburger Menu
 document.addEventListener('DOMContentLoaded', function() {
     // Add hamburger menu button to main navbar
@@ -62,6 +73,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Shopping Cart Functionality
     initializeCart();
+
+    // Floating WhatsApp contact button (all pages)
+    addWhatsAppButton();
 
     // Authentication UI
     updateAuthUI();
@@ -234,15 +248,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 paymentMethod: paymentMethod
             };
 
-            // Reset form and cart
-            clearCart();
-            orderForm.reset();
-
             if (submitBtn) {
                 submitBtn.textContent = originalBtnText;
                 submitBtn.disabled = false;
             }
 
+            // Cart and form are only cleared once the order is actually confirmed
+            // (see showOrderConfirmation) so an abandoned M-Pesa prompt keeps the cart.
             if (paymentMethod === 'M-Pesa') {
                 handleMpesaCheckoutFlow(orderDetailsObj);
             } else {
@@ -254,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Contact Form Validation
     const contactForm = document.querySelector('.contact-form form');
     if (contactForm) {
-        contactForm.addEventListener('submit', function(e) {
+        contactForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const name = document.getElementById('name').value.trim();
@@ -307,16 +319,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 clearError('message', 'contact-message-help');
             }
 
-            // If all validations pass, show success message
-            alert('Message sent successfully! We will get back to you soon.');
-            contactForm.reset();
+            const submitBtn = contactForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn ? submitBtn.textContent : 'Send Message';
+            if (submitBtn) {
+                submitBtn.textContent = 'Sending...';
+                submitBtn.disabled = true;
+            }
+
+            try {
+                if (typeof submitContact === 'function') {
+                    await submitContact({ name, email, phone, subject, message });
+                    alert('Message sent successfully! We will get back to you soon.');
+                    contactForm.reset();
+                } else {
+                    alert('Messaging is temporarily unavailable. Please try again later.');
+                }
+            } catch (err) {
+                alert('Your message could not be sent: ' + (err.message || 'Please try again.'));
+            } finally {
+                if (submitBtn) {
+                    submitBtn.textContent = originalBtnText;
+                    submitBtn.disabled = false;
+                }
+            }
         });
     }
 
     // Feedback Form Validation
     const feedbackForm = document.querySelector('.feedback-section form');
     if (feedbackForm) {
-        feedbackForm.addEventListener('submit', function(e) {
+        feedbackForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const name = document.getElementById('name').value.trim();
@@ -393,22 +425,58 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (recommendHelp) recommendHelp.style.display = 'none';
             }
 
-            // If all validations pass, submit feedback
-            const feedbackPayload = {
-                order_id: parseInt(orderNumber.replace(/[^0-9]/g, '')) || 1,
-                food_rating: parseInt(foodRating.value),
-                delivery_rating: parseInt(deliveryRating.value),
-                overall_rating: parseInt(overall),
-                recommend: recommend.value === 'yes',
-                comments: comments
-            };
-
-            if (typeof isAuthenticated === 'function' && isAuthenticated() && typeof submitFeedback === 'function') {
-                submitFeedback(feedbackPayload).catch(err => console.warn('Feedback API note:', err.message));
+            // Resolve the order number to a real order_id owned by this user.
+            // The API requires a valid order_id; guessing one corrupts feedback data.
+            const orderLookup = orderNumber.trim();
+            if (!orderLookup) {
+                alert('Please enter the order number for the order you are reviewing.');
+                return;
             }
 
-            alert('Thank you for your feedback! We appreciate your opinion.');
-            feedbackForm.reset();
+            if (typeof isAuthenticated !== 'function' || !isAuthenticated() || typeof getMyOrders !== 'function' || typeof submitFeedback !== 'function') {
+                alert('Please log in to submit feedback for your order.');
+                window.location.href = 'login.html?returnTo=feedback.html';
+                return;
+            }
+
+            const submitBtn = feedbackForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn ? submitBtn.textContent : 'Submit Feedback';
+            if (submitBtn) {
+                submitBtn.textContent = 'Submitting...';
+                submitBtn.disabled = true;
+            }
+
+            try {
+                const ordersRes = await getMyOrders();
+                const orders = Array.isArray(ordersRes) ? ordersRes : (ordersRes && ordersRes.orders ? ordersRes.orders : []);
+                const match = orders.find(o =>
+                    String(o.order_number || '').trim().toLowerCase() === orderLookup.toLowerCase()
+                );
+
+                if (!match) {
+                    alert('We could not find an order with that number on your account. Please check it and try again.');
+                    return;
+                }
+
+                await submitFeedback({
+                    order_id: match.order_id,
+                    food_rating: parseInt(foodRating.value),
+                    delivery_rating: parseInt(deliveryRating.value),
+                    overall_rating: parseInt(overall),
+                    recommend: recommend.value === 'yes',
+                    comments: comments
+                });
+
+                alert('Thank you for your feedback! We appreciate your opinion.');
+                feedbackForm.reset();
+            } catch (err) {
+                alert('Feedback could not be submitted: ' + (err.message || 'Please try again.'));
+            } finally {
+                if (submitBtn) {
+                    submitBtn.textContent = originalBtnText;
+                    submitBtn.disabled = false;
+                }
+            }
         });
     }
 
@@ -427,6 +495,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (help) help.style.display = 'none';
     }
 
+    // Expose validation helpers for page-level scripts (e.g. register.html)
+    window.showError = showError;
+    window.clearError = clearError;
+
     // M-Pesa Checkout Flow Handler
     async function handleMpesaCheckoutFlow(orderData) {
         const total = orderData.total || orderData.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -437,15 +509,15 @@ document.addEventListener('DOMContentLoaded', function() {
         mpesaModal.className = 'order-confirmation-modal';
         mpesaModal.innerHTML = `
             <div class="modal-content" style="max-width: 480px; text-align: center;">
-                <div class="modal-header" style="background: #008751; color: white; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+                <div class="modal-header" style="background: #063b2f; color: white; border-top-left-radius: 8px; border-top-right-radius: 8px;">
                     <h2 style="color: white; margin: 0; font-size: 20px;">📱 Lipa na M-Pesa Online</h2>
                 </div>
                 <div class="modal-body" style="padding: 25px 20px;">
                     <div style="font-size: 42px; margin-bottom: 10px;" class="pulsing-phone">📲</div>
                     <h3 style="color: #063b2f; margin: 0 0 10px 0;">KSh ${total}</h3>
-                    <p style="color: #555; margin-bottom: 15px;">STK PIN Prompt sent to <strong>${phone}</strong></p>
+                    <p style="color: #555; margin-bottom: 15px;">STK PIN Prompt sent to <strong>${escapeHtml(phone)}</strong></p>
 
-                    <div id="mpesa-status-box" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 14px; color: #166534;">
+                    <div id="mpesa-status-box" style="background: #f5f7f6; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 14px; color: #02271f;">
                         <span id="mpesa-status-text">⏳ Waiting for you to enter your M-Pesa PIN on your phone...</span>
                     </div>
 
@@ -454,7 +526,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </p>
 
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button class="btn" id="confirm-mpesa-btn" style="background: #008751; border-color: #008751;">
+                        <button class="btn" id="confirm-mpesa-btn" style="background: #063b2f; border-color: #063b2f;">
                             ✓ I have entered my PIN
                         </button>
                         <button class="btn secondary-btn" id="fallback-cash-btn">
@@ -540,7 +612,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const fallbackCashBtn = mpesaModal.querySelector('#fallback-cash-btn');
         if (fallbackCashBtn) {
-            fallbackCashBtn.addEventListener('click', () => {
+            fallbackCashBtn.addEventListener('click', async () => {
+                // Record a pending Cash payment server-side so the order
+                // reflects the chosen payment method.
+                if (orderData.orderId && typeof createPayment === 'function') {
+                    try {
+                        await createPayment({ order_id: orderData.orderId });
+                    } catch (payErr) {
+                        // 409 means a payment record already exists — safe to continue.
+                        console.warn('Cash payment record note:', payErr.message);
+                    }
+                }
                 cleanup();
                 orderData.paymentMethod = 'Cash on Delivery';
                 orderData.paymentStatus = 'Pending (Cash at Hostel)';
@@ -551,6 +633,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Order Confirmation Modal
     function showOrderConfirmation(orderData) {
+        // Order is confirmed — now safe to clear the cart and reset the form
+        clearCart();
+        const orderFormEl = document.querySelector('.order-section form');
+        if (orderFormEl) orderFormEl.reset();
+
         // Use backend order number or fallback
         const orderNumber = orderData.orderNumber || ('PB' + String(Math.floor(Math.random() * 1000)).padStart(3, '0'));
 
@@ -562,7 +649,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Generate items list
         let itemsHtml = '';
         orderData.cart.forEach(item => {
-            itemsHtml += `<p>• ${item.name} x${item.quantity} - KSh ${item.price * item.quantity}</p>`;
+            itemsHtml += `<p>• ${escapeHtml(item.name)} x${item.quantity} - KSh ${item.price * item.quantity}</p>`;
         });
 
         // Create modal
@@ -577,19 +664,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="modal-body">
                     <div class="order-number">
                         <p>Order Number:</p>
-                        <h3>${orderNumber}</h3>
+                        <h3>${escapeHtml(orderNumber)}</h3>
                     </div>
                     <div class="order-details">
-                        <p><strong>Name:</strong> ${orderData.name}</p>
-                        <p><strong>Phone:</strong> ${orderData.phone}</p>
+                        <p><strong>Name:</strong> ${escapeHtml(orderData.name)}</p>
+                        <p><strong>Phone:</strong> ${escapeHtml(orderData.phone)}</p>
                         <p><strong>Items:</strong></p>
                         ${itemsHtml}
                         <p><strong>Total:</strong> KSh ${total}</p>
-                        <p><strong>Payment:</strong> <span style="background: #e6f4ea; color: #137333; padding: 2px 8px; border-radius: 4px; font-weight: bold;">${paymentStatus}</span></p>
-                        ${orderData.transactionId ? `<p><strong>M-Pesa Ref:</strong> ${orderData.transactionId}</p>` : ''}
-                        <p><strong>Delivery Location:</strong> ${orderData.hostel}, ${orderData.block}, Room ${orderData.room}</p>
-                        <p><strong>Delivery Time:</strong> ${orderData.time}</p>
-                        ${orderData.message ? `<p><strong>Special Instructions:</strong> ${orderData.message}</p>` : ''}
+                        <p><strong>Payment:</strong> <span style="background: #e6f4ea; color: #065f46; padding: 2px 8px; border-radius: 4px; font-weight: bold;">${escapeHtml(paymentStatus)}</span></p>
+                        ${orderData.transactionId ? `<p><strong>M-Pesa Ref:</strong> ${escapeHtml(orderData.transactionId)}</p>` : ''}
+                        <p><strong>Delivery Location:</strong> ${escapeHtml(orderData.hostel)}, ${escapeHtml(orderData.block)}, Room ${escapeHtml(orderData.room)}</p>
+                        <p><strong>Delivery Time:</strong> ${escapeHtml(orderData.time)}</p>
+                        ${orderData.message ? `<p><strong>Special Instructions:</strong> ${escapeHtml(orderData.message)}</p>` : ''}
                     </div>
                     <div class="delivery-estimate">
                         <p>⏱️ Estimated delivery time: 30-45 minutes</p>
@@ -654,19 +741,45 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Floating WhatsApp contact button — injected on every page.
+// Demo number: 0112296406 -> +254 112 296406
+function addWhatsAppButton() {
+    if (document.getElementById('whatsapp-float')) return;
+
+    const link = document.createElement('a');
+    link.id = 'whatsapp-float';
+    link.href = 'https://wa.me/254112296406?text=' + encodeURIComponent('Hello PwaniBite! I have a question.');
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.setAttribute('aria-label', 'Contact us on WhatsApp');
+    link.title = 'Questions or inquiries? Chat with us on WhatsApp';
+    link.innerHTML = `
+        <svg viewBox="0 0 32 32" width="34" height="34" fill="currentColor" aria-hidden="true">
+            <path d="M16.04 2.67C8.5 2.67 2.4 8.77 2.4 16.31c0 2.42.63 4.79 1.82 6.87L2.4 29.33l6.31-1.65a13.6 13.6 0 0 0 7.33 2.15h.01c7.53 0 13.64-6.1 13.64-13.64S23.57 2.67 16.04 2.67zm0 24.96a11.3 11.3 0 0 1-5.76-1.58l-.41-.24-3.74.98 1-3.65-.27-.42a11.28 11.28 0 0 1-1.73-6.05c0-6.24 5.08-11.32 11.33-11.32 3.02 0 5.86 1.18 8 3.32a11.26 11.26 0 0 1 3.32 8c-.01 6.25-5.09 11.33-11.34 11.33zm6.2-8.47c-.34-.17-2-1-2.31-1.11-.31-.11-.54-.17-.77.17-.23.34-.88 1.11-1.08 1.34-.2.23-.4.26-.74.09-.34-.17-1.43-.53-2.73-1.69-.99-.89-1.68-1.99-1.88-2.33-.2-.34-.02-.52.15-.69.16-.16.34-.4.51-.6.17-.2.23-.34.34-.57.11-.23.06-.43-.03-.6-.09-.17-.77-1.87-1.06-2.56-.28-.67-.56-.58-.77-.59l-.66-.01c-.23 0-.6.09-.92.43-.31.34-1.2 1.18-1.2 2.87s1.23 3.33 1.4 3.56c.17.23 2.42 3.7 5.86 5.19.82.35 1.46.56 1.96.72.82.26 1.57.22 2.16.14.66-.1 2-.82 2.28-1.61.28-.79.28-1.47.2-1.61-.09-.14-.31-.23-.65-.4z"/>
+        </svg>
+        <span class="wa-label">Chat with us</span>
+    `;
+    document.body.appendChild(link);
+}
+window.addWhatsAppButton = addWhatsAppButton;
+
 // Shopping Cart Functions
-function addToCart(name, price) {
+function addToCart(name, price, foodId) {
     let cart = JSON.parse(localStorage.getItem('pwaniBiteCart')) || [];
 
     const existingItem = cart.find(item => item.name === name);
 
     if (existingItem) {
         existingItem.quantity += 1;
+        if (foodId && !existingItem.food_id) {
+            existingItem.food_id = foodId;
+        }
     } else {
         cart.push({
             name: name,
             price: price,
-            quantity: 1
+            quantity: 1,
+            food_id: foodId || null
         });
     }
 
@@ -742,18 +855,18 @@ function displayCart() {
     }
 
     let html = '';
-    cart.forEach(item => {
+    cart.forEach((item, index) => {
         html += `
             <div class="cart-item">
                 <div class="cart-item-info">
-                    <h4>${item.name}</h4>
+                    <h4>${escapeHtml(item.name)}</h4>
                     <p>KSh ${item.price} each</p>
                 </div>
                 <div class="cart-item-controls">
-                    <button class="quantity-btn" onclick="updateQuantity('${item.name}', -1)">-</button>
+                    <button class="quantity-btn" onclick="cartUpdateQty(${index}, -1)">-</button>
                     <span class="quantity">${item.quantity}</span>
-                    <button class="quantity-btn" onclick="updateQuantity('${item.name}', 1)">+</button>
-                    <button class="remove-btn" onclick="removeFromCart('${item.name}')">Remove</button>
+                    <button class="quantity-btn" onclick="cartUpdateQty(${index}, 1)">+</button>
+                    <button class="remove-btn" onclick="cartRemoveItem(${index})">Remove</button>
                 </div>
                 <div class="cart-item-total">
                     <p>KSh ${item.price * item.quantity}</p>
@@ -772,6 +885,26 @@ function displayCart() {
         updateFinalTotal();
     }
 }
+
+// Index-based cart helpers used by displayCart's inline handlers.
+// Indices are numeric, so they are safe to interpolate into onclick attributes
+// regardless of the characters in the item name.
+function cartUpdateQty(index, change) {
+    const cart = JSON.parse(localStorage.getItem('pwaniBiteCart')) || [];
+    const item = cart[index];
+    if (!item) return;
+    updateQuantity(item.name, change);
+}
+
+function cartRemoveItem(index) {
+    const cart = JSON.parse(localStorage.getItem('pwaniBiteCart')) || [];
+    const item = cart[index];
+    if (!item) return;
+    removeFromCart(item.name);
+}
+
+window.cartUpdateQty = cartUpdateQty;
+window.cartRemoveItem = cartRemoveItem;
 
 function clearCart() {
     localStorage.removeItem('pwaniBiteCart');
@@ -806,11 +939,12 @@ function initializeCart() {
     // Update cart count on page load
     updateCartCount();
 
-    // Add to cart buttons on menu page
+    // Menu card buttons: add the item to the cart, then follow the link
+    // (e.g. "Order Now" navigates to order.html). Dynamic menu buttons render
+    // after this runs and bind their own listeners in menu.html.
     const menuButtons = document.querySelectorAll('.menu-btn');
     menuButtons.forEach(btn => {
         btn.addEventListener('click', function(e) {
-            e.preventDefault();
             const menuCard = this.closest('.menu-card');
             if (!menuCard) return;
 
@@ -866,7 +1000,7 @@ function updateAuthUI() {
         userLink.innerHTML = `
             <a href="#" class="user-info" onclick="showUserInfo()">
                 <span>👤</span>
-                <span>${currentUser.name.split(' ')[0]}</span>
+                <span>${escapeHtml(String(currentUser.name || '').split(' ')[0])}</span>
             </a>
         `;
 
@@ -950,12 +1084,12 @@ function displayOrderSummary() {
     let html = '';
     let total = 0;
 
-    cart.forEach(item => {
+    cart.forEach((item, index) => {
         const itemTotal = item.price * item.quantity;
         total += itemTotal;
         html += `
             <div class="order-summary-item">
-                <span>${item.name} x${item.quantity}</span>
+                <span>${escapeHtml(item.name)} x${item.quantity}</span>
                 <span>KSh ${itemTotal}</span>
             </div>
         `;

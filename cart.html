@@ -64,12 +64,12 @@
 
                 <div class="summary-item">
                     <span>Delivery Fee:</span>
-                    <span>KSh 30</span>
+                    <span>Free</span>
                 </div>
 
                 <div class="summary-item total">
                     <span>Total:</span>
-                    <span class="final-total">KSh 30</span>
+                    <span class="final-total">KSh 0</span>
                 </div>
 
                 <button class="btn checkout-btn" onclick="proceedToCheckout()">
@@ -148,7 +148,8 @@
                 cartContainer.style.display = 'block';
             }
 
-            const deliveryFee = 30;
+            // The backend does not charge a delivery fee; total is items only.
+            const deliveryFee = 0;
             const finalTotal = cartTotal + deliveryFee;
             
             const finalTotalElement = document.querySelector('.final-total');

@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS payments (
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
-    INDEX idx_order_id (order_id),
+    UNIQUE KEY uq_payments_order_id (order_id),
     INDEX idx_payment_status (payment_status),
     INDEX idx_transaction_id (transaction_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -150,17 +150,42 @@ INSERT INTO users (name, email, phone, password, role) VALUES
 ('Admin User', 'admin@pwanibite.com', '0712345678', '$2a$10$Ex1E0sWZ6If8Q3gh97BnRuQSJpJcH2bfnRggvZo0vFE.BoUIHfD3m', 'admin');
 
 -- ============================================
--- INSERT SAMPLE FOOD ITEMS
+-- INSERT MENU ITEMS (seed missing entries; existing entries are updated by name)
 -- ============================================
-INSERT INTO food (food_name, description, price, category, availability, stock_quantity) VALUES
-('Pilau', 'Spiced rice served with a tasty accompaniment', 100.00, 'Main Course', TRUE, 50),
-('Beans', 'Delicious beans served with your choice of accompaniment', 20.00, 'Side Dish', TRUE, 100),
-('Chapati Offer', 'Soft chapati served with tasty beans at an offer', 50.00, 'Offer', TRUE, 30),
-('Rice & Beans', 'Fresh rice served with delicious beans stew', 60.00, 'Main Course', TRUE, 60),
-('Ugali', 'Soft white delicious ugali served with your choice companion', 30.00, 'Main Course', TRUE, 80),
-('Fresh Juice', 'Refreshing fruit juice prepared fresh for you', 80.00, 'Beverage', TRUE, 40),
-('Chicken', 'Grilled chicken served with accompaniments', 200.00, 'Main Course', TRUE, 25),
-('Chips', 'Crispy french fries', 120.00, 'Side Dish', TRUE, 70);
+INSERT INTO food (food_name, description, price, category, availability, stock_quantity)
+SELECT menu.food_name, menu.description, menu.price, menu.category, TRUE, 50
+FROM (
+    SELECT 'Tamarind Juice' food_name, 'Fresh tamarind juice' description, 30.00 price, 'Juices' category UNION ALL
+    SELECT 'Passion Juice', 'Fresh passion juice', 40.00, 'Juices' UNION ALL
+    SELECT 'Mango Juice', 'Fresh mango juice', 50.00, 'Juices' UNION ALL
+    SELECT 'Pineapple Juice', 'Fresh pineapple juice', 40.00, 'Juices' UNION ALL
+    SELECT 'Hibiscus Juice', 'Refreshing hibiscus juice', 50.00, 'Juices' UNION ALL
+    SELECT 'Samosa', 'Crispy samosa', 10.00, 'Snacks' UNION ALL
+    SELECT 'Viazi Karai', 'Spiced viazi karai', 5.00, 'Snacks' UNION ALL
+    SELECT 'Donut', 'Fresh donut', 10.00, 'Snacks' UNION ALL
+    SELECT 'Chapati', 'Fresh chapati', 15.00, 'Snacks' UNION ALL
+    SELECT 'Chips', 'Crispy chips', 100.00, 'Snacks' UNION ALL
+    SELECT 'Smokie', 'Smokie sausage', 40.00, 'Snacks' UNION ALL
+    SELECT 'Boiled Eggs', 'Boiled eggs', 30.00, 'Snacks' UNION ALL
+    SELECT 'Smocha', 'Smokie wrapped in chapati', 60.00, 'Snacks' UNION ALL
+    SELECT 'Chips Zoge', 'Chips zoge', 150.00, 'Snacks' UNION ALL
+    SELECT 'Chips Kuku Macha', 'Chips kuku macha', 300.00, 'Snacks' UNION ALL
+    SELECT 'Chapati & Beans Offer', 'Four chapatis served with beans', 60.00, 'Main Dishes' UNION ALL
+    SELECT 'Ugali & Omena', 'Ugali served with omena', 70.00, 'Main Dishes' UNION ALL
+    SELECT 'Ugali & Mayai', 'Ugali served with eggs', 100.00, 'Main Dishes' UNION ALL
+    SELECT 'Rice & Beans', 'Rice served with beans', 70.00, 'Main Dishes' UNION ALL
+    SELECT 'Kahawa', 'Kenyan coffee', 20.00, 'Drinks' UNION ALL
+    SELECT 'Chai Rangi', 'Kenyan black tea', 20.00, 'Drinks' UNION ALL
+    SELECT 'Milk Tea', 'Tea with milk', 30.00, 'Drinks' UNION ALL
+    SELECT 'Mineral Water', 'Bottled mineral water', 30.00, 'Drinks'
+) AS menu
+LEFT JOIN food existing ON LOWER(existing.food_name) = LOWER(menu.food_name)
+WHERE existing.food_id IS NULL;
+
+UPDATE food SET price = 100.00, category = 'Snacks', description = 'Crispy chips'
+WHERE LOWER(food_name) = 'chips';
+UPDATE food SET price = 70.00, category = 'Main Dishes', description = 'Rice served with beans'
+WHERE LOWER(food_name) = 'rice & beans';
 
 -- ============================================
 -- CREATE VIEWS FOR REPORTS

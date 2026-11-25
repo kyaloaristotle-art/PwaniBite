@@ -173,8 +173,9 @@
         });
 
         const registerLink = document.querySelector('.auth-switch a');
-        if (getPostAuthRedirect() === 'order.html') {
-            registerLink.href = 'register.html?returnTo=order.html';
+        const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+        if (returnTo === 'order.html' || returnTo === 'feedback.html') {
+            registerLink.href = 'register.html?returnTo=' + returnTo;
         }
 
         loginForm.addEventListener('submit', async function(e) {

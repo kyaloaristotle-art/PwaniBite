@@ -95,6 +95,7 @@ class Payment(models.Model):
     class Meta:
         managed = False
         db_table = "payments"
+        unique_together = (("order",),)
 
 
 class Delivery(models.Model):
@@ -114,6 +115,20 @@ class Delivery(models.Model):
     class Meta:
         managed = False
         db_table = "delivery"
+
+
+class ContactMessage(models.Model):
+    contact_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    email = models.CharField(max_length=100)
+    phone = models.CharField(max_length=15, null=True, blank=True)
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = "contact_messages"
 
 
 class Feedback(models.Model):

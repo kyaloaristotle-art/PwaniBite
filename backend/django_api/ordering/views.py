@@ -17,7 +17,7 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Delivery, Feedback, Food, Order, OrderItem, Payment, User
+from .models import ContactMessage, Delivery, Feedback, Food, Order, OrderItem, Payment, User
 from .permissions import IsAdmin, IsAdminOrDelivery, IsCustomer
 from .tokens import issue_token
 from .throttles import AuthAttemptThrottle
@@ -74,6 +74,41 @@ def parse_date(value):
         return datetime.strptime(value, "%Y-%m-%d").date() if value else None
     except ValueError:
         return None
+
+
+def parse_food_payload(body, food=None):
+    """Validate and normalize fields accepted by food create/update endpoints."""
+    fields = {}
+    for key in ("food_name", "description", "price", "category", "availability", "stock_quantity", "image"):
+        if key in body:
+            fields[key] = body[key]
+    if food is None and not all(fields.get(key) not in (None, "") for key in ("food_name", "price", "category")):
+        raise ValueError("Food name, price, and category are required")
+    if "food_name" in fields:
+        fields["food_name"] = str(fields["food_name"]).strip()
+        if not 1 <= len(fields["food_name"]) <= 100:
+            raise ValueError("Food name must be between 1 and 100 characters")
+    if "category" in fields:
+        fields["category"] = str(fields["category"]).strip()
+        if not 1 <= len(fields["category"]) <= 50:
+            raise ValueError("Category must be between 1 and 50 characters")
+    if "price" in fields:
+        fields["price"] = Decimal(str(fields["price"]))
+        if not fields["price"].is_finite() or fields["price"] <= 0 or fields["price"].as_tuple().exponent < -2:
+            raise ValueError("Price must be positive with at most two decimal places")
+    if "stock_quantity" in fields:
+        value = fields["stock_quantity"]
+        if isinstance(value, bool) or str(value).strip() != str(int(value)) or int(value) < 0:
+            raise ValueError("Stock quantity must be a non-negative whole number")
+        fields["stock_quantity"] = int(value)
+    if "availability" in fields and not isinstance(fields["availability"], bool):
+        raise ValueError("Availability must be true or false")
+    for key, limit in (("description", None), ("image", 255)):
+        if key in fields and fields[key] is not None:
+            fields[key] = str(fields[key])
+            if limit and len(fields[key]) > limit:
+                raise ValueError(f"{key.title()} is too long")
+    return fields
 
 
 def hash_password(raw_password):
@@ -150,6 +185,25 @@ def food_categories(request):
     return Response({"categories": list(Food.objects.order_by("category").values_list("category", flat=True).distinct())})
 
 
+@api_view(["POST"])
+def food_image_upload(request):
+    if not request.user or not request.user.is_authenticated or request.user.role != "admin":
+        return error("Admin access required", status.HTTP_403_FORBIDDEN)
+    uploaded = request.FILES.get("image")
+    if not uploaded:
+        return error("Choose an image to upload")
+    allowed = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif"}
+    content_type = getattr(uploaded, "content_type", "")
+    if content_type not in allowed or uploaded.size > 5 * 1024 * 1024:
+        return error("Use a JPG, PNG, WebP, or GIF image up to 5 MB")
+    filename = f"{secrets.token_hex(16)}{allowed[content_type]}"
+    relative_path = f"Images/uploads/{filename}"
+    target = settings.FRONTEND_ROOT / relative_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(uploaded.read())
+    return Response({"image": relative_path.replace("\\", "/")}, status=status.HTTP_201_CREATED)
+
+
 @api_view(["GET", "POST"])
 def food_collection(request):
     if request.method == "GET":
@@ -163,18 +217,14 @@ def food_collection(request):
     if not request.user or not request.user.is_authenticated or request.user.role != "admin":
         return error("Admin access required", status.HTTP_403_FORBIDDEN)
     body = request.data
-    required = ["food_name", "price", "category"]
-    if any(not body.get(key) for key in required):
-        return error("Food name, price, and category are required")
     try:
-        food = Food.objects.create(
-            food_name=str(body["food_name"]).strip(), description=body.get("description", ""),
-            price=Decimal(str(body["price"])), category=str(body["category"]).strip(),
-            availability=body.get("availability", True), stock_quantity=int(body.get("stock_quantity") or 0),
-            image=body.get("image"),
-        )
-    except (InvalidOperation, TypeError, ValueError):
-        return error("Invalid price or stock quantity")
+        fields = parse_food_payload(body)
+        fields.setdefault("description", "")
+        fields.setdefault("availability", True)
+        fields.setdefault("stock_quantity", 0)
+        food = Food.objects.create(**fields)
+    except (InvalidOperation, TypeError, ValueError, OverflowError) as exc:
+        return error(str(exc) or "Invalid food item data")
     return Response({"message": "Food item added successfully", "food_id": food.food_id}, status=status.HTTP_201_CREATED)
 
 
@@ -194,14 +244,12 @@ def food_detail(request, food_id):
         return Response({"message": "Food item deleted successfully"})
     body = request.data
     try:
-        for field in ("food_name", "description", "price", "category", "availability", "stock_quantity", "image"):
-            if field in body:
-                setattr(food, field, body[field])
-        food.price = Decimal(str(food.price))
-        food.stock_quantity = int(food.stock_quantity)
+        fields = parse_food_payload(body, food)
+        for field, value in fields.items():
+            setattr(food, field, value)
         food.save()
-    except (InvalidOperation, TypeError, ValueError):
-        return error("Invalid food item data")
+    except (InvalidOperation, TypeError, ValueError, OverflowError) as exc:
+        return error(str(exc) or "Invalid food item data")
     return Response({"message": "Food item updated successfully"})
 
 
@@ -415,16 +463,20 @@ def payments_collection(request):
     body = request.data
     if body.get("payment_method") != "Cash":
         return error("Use the M-Pesa checkout flow for M-Pesa payments.")
-    order = Order.objects.filter(order_id=body.get("order_id")).first()
-    if not order:
-        return error("Order not found", status.HTTP_404_NOT_FOUND)
-    if request.user.role != "admin" and order.user_id != request.user.user_id:
-        return error("You are not authorized to record payment for this order", status.HTTP_403_FORBIDDEN)
-    if order.order_status == "Cancelled":
-        return error("A cancelled order cannot be paid.")
-    if Payment.objects.filter(order_id=order.order_id).exists():
+    try:
+        with transaction.atomic():
+            order = Order.objects.select_for_update().filter(order_id=body.get("order_id")).first()
+            if not order:
+                return error("Order not found", status.HTTP_404_NOT_FOUND)
+            if request.user.role != "admin" and order.user_id != request.user.user_id:
+                return error("You are not authorized to record payment for this order", status.HTTP_403_FORBIDDEN)
+            if order.order_status == "Cancelled":
+                return error("A cancelled order cannot be paid.")
+            if Payment.objects.filter(order_id=order.order_id).exists():
+                return error("This order already has a payment record", status.HTTP_409_CONFLICT)
+            payment = Payment.objects.create(order=order, payment_method="Cash", amount=order.total_amount, payment_status="Pending")
+    except IntegrityError:
         return error("This order already has a payment record", status.HTTP_409_CONFLICT)
-    payment = Payment.objects.create(order=order, payment_method="Cash", amount=order.total_amount, payment_status="Pending")
     return Response({"message": "Payment recorded successfully", "payment_id": payment.payment_id}, status=status.HTTP_201_CREATED)
 
 
@@ -775,8 +827,6 @@ def mpesa_stk_push(request):
         return error("M-Pesa payments must be a whole number of shillings")
     if order.order_status == "Cancelled":
         return error("A cancelled order cannot be paid.")
-    if Payment.objects.filter(order_id=order.order_id).exists():
-        return error("This order already has a payment record", status.HTTP_409_CONFLICT)
     raw_phone = str(body.get("phone_number", "")).strip().replace(" ", "")
     if raw_phone.startswith("+"):
         raw_phone = raw_phone[1:]
@@ -808,8 +858,15 @@ def mpesa_stk_push(request):
         checkout_id = provider.get("CheckoutRequestID")
         if not checkout_id:
             return error(provider.get("errorMessage") or provider.get("ResponseDescription") or "M-Pesa did not accept the payment request", status.HTTP_502_BAD_GATEWAY)
-        payment = Payment.objects.create(order=order, payment_method="M-Pesa", amount=order.total_amount,
-                                         payment_status="Pending", transaction_id=checkout_id)
+        try:
+            with transaction.atomic():
+                locked_order = Order.objects.select_for_update().get(order_id=order.order_id)
+                if Payment.objects.filter(order_id=order.order_id).exists():
+                    return error("This order already has a payment record", status.HTTP_409_CONFLICT)
+                payment = Payment.objects.create(order=locked_order, payment_method="M-Pesa", amount=order.total_amount,
+                                                 payment_status="Pending", transaction_id=checkout_id)
+        except (IntegrityError, Order.DoesNotExist):
+            return error("This order already has a payment record", status.HTTP_409_CONFLICT)
         return Response({
             "message": "STK Push initiated successfully", "merchant_request_id": provider.get("MerchantRequestID"),
             "checkout_request_id": checkout_id,
@@ -836,12 +893,40 @@ def mpesa_callback(request):
     if payment.payment_status != "Pending":
         return Response({"ResultCode": 0, "ResultDesc": "Callback already processed"})
     if result_code == 0:
-        payment.payment_status = "Completed"
-        payment.save(update_fields=["payment_status"])
-        Order.objects.filter(order_id=payment.order_id).update(order_status="Preparing", updated_at=timezone.now())
+        # Callback payloads are not signed. Confirm the checkout directly with Daraja,
+        # then require the provider result, amount, and checkout ID to agree.
+        try:
+            import requests
+            access_token, base = mpesa_access_token()
+            shortcode, passkey = os.getenv("MPESA_SHORTCODE", ""), os.getenv("MPESA_PASSKEY", "")
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            import base64
+            password = base64.b64encode(f"{shortcode}{passkey}{timestamp}".encode()).decode()
+            verified = requests.post(f"{base}/mpesa/stkpushquery/v1/query", json={
+                "BusinessShortCode": shortcode, "Password": password, "Timestamp": timestamp,
+                "CheckoutRequestID": checkout_id,
+            }, headers={"Authorization": f"Bearer {access_token}"}, timeout=20)
+            verified.raise_for_status()
+            provider = verified.json()
+            metadata = callback.get("CallbackMetadata", {}).get("Item", [])
+            callback_items = {item.get("Name"): item.get("Value") for item in metadata if isinstance(item, dict)}
+            amount = Decimal(str(callback_items.get("Amount", "-1")))
+            receipt = str(callback_items.get("MpesaReceiptNumber", ""))
+            if (str(provider.get("ResultCode")) != "0" or amount != payment.amount
+                    or not receipt or str(provider.get("CheckoutRequestID")) != str(checkout_id)):
+                return Response({"ResultCode": 1, "ResultDesc": "Payment verification did not match"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                locked = Payment.objects.select_for_update().filter(payment_id=payment.payment_id, payment_status="Pending").first()
+                if locked:
+                    locked.payment_status = "Completed"
+                    locked.transaction_id = receipt
+                    locked.save(update_fields=["payment_status", "transaction_id"])
+                    Order.objects.filter(order_id=locked.order_id).update(order_status="Preparing", updated_at=timezone.now())
+        except Exception:
+            return Response({"ResultCode": 1, "ResultDesc": "Payment verification unavailable"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     else:
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
+        with transaction.atomic():
+            Payment.objects.filter(payment_id=payment.payment_id, payment_status="Pending").update(payment_status="Failed")
     return Response({"ResultCode": 0, "ResultDesc": "Callback received successfully"})
 
 
@@ -885,3 +970,44 @@ def mpesa_query(request):
         return Response(response.json())
     except (requests.RequestException, RuntimeError) as exc:
         return error("Failed to query M-Pesa transaction", status.HTTP_502_BAD_GATEWAY, message=str(exc))
+
+
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def contact_collection(request):
+    if request.method == "GET":
+        if not request.user or not request.user.is_authenticated or request.user.role != "admin":
+            return error("Admin access required", status.HTTP_403_FORBIDDEN)
+        messages = ContactMessage.objects.order_by("-created_at")[:200]
+        return Response({"messages": [{
+            "contact_id": m.contact_id, "name": m.name, "email": m.email,
+            "phone": m.phone, "subject": m.subject, "message": m.message,
+            "created_at": m.created_at,
+        } for m in messages]})
+
+    body = request.data
+    name = str(body.get("name", "")).strip()
+    email = str(body.get("email", "")).strip()
+    phone = str(body.get("phone", "")).strip()
+    subject = str(body.get("subject", "")).strip()
+    message = str(body.get("message", "")).strip()
+
+    if len(name) < 2:
+        return error("Please enter your name")
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        return error("Please enter a valid email address")
+    if phone and not re.fullmatch(r"(\+?254|0)(7|1)\d{8}", phone.replace(" ", "")):
+        return error("Please enter a valid phone number")
+    if len(subject) < 3:
+        return error("Please enter a subject")
+    if len(message) < 10:
+        return error("Message must be at least 10 characters")
+
+    try:
+        ContactMessage.objects.create(
+            name=name[:100], email=email[:100], phone=phone[:15] or None,
+            subject=subject[:200], message=message,
+        )
+    except Exception:
+        return error("Your message could not be sent right now. Please try again later.", status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return Response({"message": "Message sent successfully"}, status=status.HTTP_201_CREATED)

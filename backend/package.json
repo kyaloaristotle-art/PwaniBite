@@ -5,7 +5,8 @@
   "scripts": {
     "start": "python django_api/manage.py runserver 127.0.0.1:8000",
     "dev": "python django_api/manage.py runserver 127.0.0.1:8000",
-    "init-db": "node database/init.js"
+    "init-db": "node database/init.js",
+    "sync-menu": "node database/sync-menu.js"
   },
   "keywords": [
     "food",

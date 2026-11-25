@@ -9,8 +9,12 @@ BACKEND_DIR = BASE_DIR.parent
 PROJECT_ROOT = BACKEND_DIR.parent
 load_dotenv(BACKEND_DIR / ".env")
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY") or os.getenv("JWT_SECRET") or "local-only-change-me"
-DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
+DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY") or os.getenv("JWT_SECRET")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise RuntimeError("Set DJANGO_SECRET_KEY (and JWT_SECRET if needed) before starting outside debug mode")
+    SECRET_KEY = "local-only-change-me"
 ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if host.strip()]
 
 INSTALLED_APPS = [
@@ -64,5 +68,7 @@ REST_FRAMEWORK = {
 APPEND_SLASH = False
 
 JWT_SECRET = os.getenv("JWT_SECRET") or SECRET_KEY
+if not DEBUG and JWT_SECRET == "local-only-change-me":
+    raise RuntimeError("Set a strong JWT_SECRET before starting outside debug mode")
 JWT_EXPIRE_SECONDS = int(os.getenv("JWT_EXPIRE_SECONDS", str(7 * 24 * 60 * 60)))
 FRONTEND_ROOT = PROJECT_ROOT
