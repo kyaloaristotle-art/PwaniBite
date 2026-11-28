@@ -4263,3 +4263,142 @@ body:not(.home-page) .profile-details div {
         margin-top: 4px;
     }
 }
+
+/* Full-screen sections and gentle section snapping on the landing page. */
+.home-page-scroll {
+    scroll-snap-type: y proximity;
+}
+
+.home-page > .hero,
+.home-page > .services,
+.home-page > .popular,
+.home-page > .cta {
+    min-height: 100vh;
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+}
+
+.home-page > .hero,
+.home-page > .services,
+.home-page > .popular,
+.home-page > .cta {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.home-page .hero {
+    background-attachment: fixed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-page-scroll {
+        scroll-behavior: auto;
+        scroll-snap-type: none;
+    }
+}
+
+/* Menu items stay in clear cards over the campus background. */
+body:not(.home-page) .menu-card {
+    background-color: #fffdf8;
+    border: 1px solid rgba(6, 59, 47, .14);
+    box-shadow: 0 6px 18px rgba(24, 39, 32, .18);
+}
+
+body:not(.home-page) .menu-card:hover {
+    box-shadow: 0 10px 25px rgba(24, 39, 32, .24);
+}
+
+/* =========================================
+   CANTEEN PICKER & BADGES
+========================================= */
+
+.canteen-section {
+    max-width: 1200px;
+    margin: 10px auto 20px;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.canteen-heading {
+    color: #063b2f;
+    font-size: 22px;
+    margin-bottom: 6px;
+}
+
+.canteen-subheading {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.canteen-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
+.canteen-pill {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 170px;
+    padding: 14px 22px;
+    border-radius: 14px;
+    border: 2px solid #063b2f;
+    background: white;
+    color: #063b2f;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.canteen-pill strong {
+    font-size: 15px;
+}
+
+.canteen-pill small {
+    font-size: 12px;
+    color: #777;
+    font-weight: normal;
+}
+
+.canteen-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(6, 59, 47, 0.18);
+}
+
+.canteen-pill.active {
+    background: #063b2f;
+    color: #f6c343;
+    border-color: #063b2f;
+}
+
+.canteen-pill.active small {
+    color: #f6c343;
+    opacity: 0.85;
+}
+
+.card-canteen {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(6, 59, 47, 0.92);
+    color: #f6c343;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 12px;
+    z-index: 2;
+}
+
+.cart-canteen-note {
+    background: #e6f4ea;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 15px;
+    font-size: 14px;
+}

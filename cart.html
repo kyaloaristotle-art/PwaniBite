@@ -58,6 +58,11 @@
 
                 <h2>Order Summary</h2>
 
+                <div class="summary-item" id="cart-canteen-row" style="display: none;">
+                    <span>Canteen:</span>
+                    <span id="cart-canteen-name"></span>
+                </div>
+
                 <div class="summary-item">
                     <span>Subtotal:</span>
                     <span class="cart-total">KSh 0</span>
@@ -125,6 +130,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             displayCart();
             updateFinalTotal();
+            const canteenRow = document.getElementById('cart-canteen-row');
+            const canteenName = document.getElementById('cart-canteen-name');
+            if (canteenRow && canteenName && typeof getCartCanteen === 'function') {
+                const cartCanteen = getCartCanteen();
+                if (cartCanteen && cartCanteen.canteen_name) {
+                    canteenName.textContent = cartCanteen.canteen_name;
+                    canteenRow.style.display = '';
+                }
+            }
         });
 
         function updateFinalTotal() {

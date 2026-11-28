@@ -92,9 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const name = document.getElementById('name').value.trim();
             const phone = document.getElementById('phone').value.trim();
-            const hostel = document.getElementById('hostel').value;
-            const block = document.getElementById('block').value;
-            const room = document.getElementById('room').value.trim();
+            const deliveryLocation = document.getElementById('delivery-location').value.trim();
             const time = document.getElementById('time').value;
 
             // Validate name
@@ -114,28 +112,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 clearError('phone', 'phone-help');
             }
 
-            // Validate hostel selection
-            if (!hostel) {
-                showError('hostel', 'hostel-help');
+            // Validate the campus meeting point
+            if (deliveryLocation.length < 3) {
+                showError('delivery-location', 'delivery-location-help');
                 return;
             } else {
-                clearError('hostel', 'hostel-help');
-            }
-
-            // Validate block selection
-            if (!block) {
-                showError('block', 'block-help');
-                return;
-            } else {
-                clearError('block', 'block-help');
-            }
-
-            // Validate room number
-            if (room.length < 2) {
-                showError('room', 'room-help');
-                return;
-            } else {
-                clearError('room', 'room-help');
+                clearError('delivery-location', 'delivery-location-help');
             }
 
             // Validate cart has items
@@ -198,13 +180,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 try {
+                    const orderCartCanteen = getCartCanteen();
                     const orderPayload = {
-                        delivery_location: `${hostel}, ${block}, Room ${room}`,
-                        hostel: hostel,
-                        block: block,
-                        room: room,
+                        delivery_location: deliveryLocation,
                         delivery_time: time,
                         special_instructions: message,
+                        canteen_id: orderCartCanteen ? orderCartCanteen.canteen_id : null,
                         items: cart.map(item => ({
                             food_name: item.name,
                             food_id: item.food_id || null,
@@ -238,14 +219,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 name: name,
                 phone: phone,
                 mpesaPhone: mpesaPhone,
-                hostel: hostel,
-                block: block,
-                room: room,
+                deliveryLocation: deliveryLocation,
                 cart: [...cart],
                 total: orderTotal,
                 time: time,
                 message: message,
-                paymentMethod: paymentMethod
+                paymentMethod: paymentMethod,
+                canteenName: (getCartCanteen() || {}).canteen_name || null
             };
 
             if (submitBtn) {
@@ -631,7 +611,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 cleanup();
                 orderData.paymentMethod = 'Cash on Delivery';
-                orderData.paymentStatus = 'Pending (Cash at Hostel)';
+                orderData.paymentStatus = 'Pending (Cash on Delivery)';
                 showOrderConfirmation(orderData);
             });
         }
@@ -679,8 +659,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${itemsHtml}
                         <p><strong>Total:</strong> KSh ${total}</p>
                         <p><strong>Payment:</strong> <span style="background: #e6f4ea; color: #065f46; padding: 2px 8px; border-radius: 4px; font-weight: bold;">${escapeHtml(paymentStatus)}</span></p>
+                        ${orderData.canteenName ? `<p><strong>Canteen:</strong> ${escapeHtml(orderData.canteenName)}</p>` : ''}
                         ${orderData.transactionId ? `<p><strong>M-Pesa Ref:</strong> ${escapeHtml(orderData.transactionId)}</p>` : ''}
-                        <p><strong>Delivery Location:</strong> ${escapeHtml(orderData.hostel)}, ${escapeHtml(orderData.block)}, Room ${escapeHtml(orderData.room)}</p>
+                        <p><strong>Delivery Location:</strong> ${escapeHtml(orderData.deliveryLocation)}</p>
                         <p><strong>Delivery Time:</strong> ${escapeHtml(orderData.time)}</p>
                         ${orderData.message ? `<p><strong>Special Instructions:</strong> ${escapeHtml(orderData.message)}</p>` : ''}
                     </div>
@@ -746,8 +727,31 @@ function addWhatsAppButton() {
 window.addWhatsAppButton = addWhatsAppButton;
 
 // Shopping Cart Functions
-function addToCart(name, price, foodId) {
+// One order can only come from a single canteen. Cart items carry
+// canteen_id/canteen_name so the UI can enforce that before checkout.
+function getCartCanteen() {
+    const cart = JSON.parse(localStorage.getItem('pwaniBiteCart')) || [];
+    const tagged = cart.find(item => item.canteen_id != null);
+    const source = tagged || cart[0];
+    if (!source) return null;
+    return {
+        canteen_id: source.canteen_id != null ? source.canteen_id : null,
+        canteen_name: source.canteen_name || null
+    };
+}
+window.getCartCanteen = getCartCanteen;
+
+function addToCart(name, price, foodId, canteen) {
     let cart = JSON.parse(localStorage.getItem('pwaniBiteCart')) || [];
+
+    const newCanteenId = canteen && canteen.canteen_id != null ? canteen.canteen_id : null;
+    const newCanteenName = canteen && canteen.name ? canteen.name : null;
+    const cartCanteen = getCartCanteen();
+    if (cart.length > 0 && cartCanteen && cartCanteen.canteen_id != null &&
+        newCanteenId != null && cartCanteen.canteen_id !== newCanteenId) {
+        alert(`Your cart already has items from ${cartCanteen.canteen_name || 'another canteen'}. One order can only come from a single canteen — clear the cart or remove those items first.`);
+        return false;
+    }
 
     const existingItem = cart.find(item => item.name === name);
 
@@ -756,12 +760,18 @@ function addToCart(name, price, foodId) {
         if (foodId && !existingItem.food_id) {
             existingItem.food_id = foodId;
         }
+        if (newCanteenId != null && existingItem.canteen_id == null) {
+            existingItem.canteen_id = newCanteenId;
+            existingItem.canteen_name = newCanteenName;
+        }
     } else {
         cart.push({
             name: name,
             price: price,
             quantity: 1,
-            food_id: foodId || null
+            food_id: foodId || null,
+            canteen_id: newCanteenId,
+            canteen_name: newCanteenName
         });
     }
 
@@ -770,6 +780,7 @@ function addToCart(name, price, foodId) {
 
     // Show notification
     showNotification(`${name} added to cart!`);
+    return true;
 }
 
 function removeFromCart(name) {
@@ -837,6 +848,10 @@ function displayCart() {
     }
 
     let html = '';
+    const cartCanteen = getCartCanteen();
+    if (cartCanteen && cartCanteen.canteen_name) {
+        html += `<div class="cart-canteen-note">🍽 Ordering from <strong>${escapeHtml(cartCanteen.canteen_name)}</strong> — one order per canteen.</div>`;
+    }
     cart.forEach((item, index) => {
         html += `
             <div class="cart-item">
@@ -985,6 +1000,7 @@ function updateAuthUI() {
                 <a href="profile.html" role="menuitem">My Profile</a>
                 <a href="orders.html" role="menuitem">My Orders</a>
                 ${currentUser.role === 'admin' ? '<a href="admin.html" role="menuitem">Admin Access</a>' : ''}
+                ${currentUser.role === 'canteen_manager' ? '<a href="canteen-manager.html" role="menuitem">Canteen Management</a>' : ''}
                 <button type="button" role="menuitem" class="profile-menu-logout" onclick="handleLogout()">Log Out</button>
             </div>
         `;
@@ -1073,6 +1089,11 @@ function displayOrderSummary() {
 
     let html = '';
     let total = 0;
+    const cartCanteen = getCartCanteen();
+
+    if (cartCanteen && cartCanteen.canteen_name) {
+        html += `<div class="order-summary-item"><span>Canteen:</span><span>${escapeHtml(cartCanteen.canteen_name)}</span></div>`;
+    }
 
     cart.forEach((item, index) => {
         const itemTotal = item.price * item.quantity;

@@ -67,6 +67,13 @@
         </div>
     </section>
 
+    <!-- Canteen Picker -->
+    <section class="canteen-section" id="canteen-section">
+        <h2 class="canteen-heading">Choose Your Canteen</h2>
+        <p class="canteen-subheading">Pick the canteen you want to order from — one order per canteen.</p>
+        <div class="canteen-pills" id="canteen-pills"></div>
+    </section>
+
     <!-- Food Menu -->
     <section class="menu-section">
 
@@ -88,7 +95,7 @@
 
             <div class="menu-card" data-category="Main Dishes">
                 <div class="menu-card-media">
-                    <img src="Images/Ugali & Omena.jpg" alt="Ugali & Omena">
+                    <img src="Images/Ugali Omena.jpg" alt="Ugali & Omena">
                     <span class="card-tag">Main Dishes</span>
                     <span class="card-price">KSh 70</span>
                 </div>
@@ -101,7 +108,7 @@
 
             <div class="menu-card" data-category="Main Dishes">
                 <div class="menu-card-media">
-                    <img src="Images/Ugali & Mayai.jpg" alt="Ugali & Mayai">
+                    <img src="Images/Ugali mayai.jpg" alt="Ugali & Mayai">
                     <span class="card-tag">Main Dishes</span>
                     <span class="card-price">KSh 100</span>
                 </div>
@@ -413,10 +420,14 @@
             let allFoodItems = [];
             let currentCategory = 'all';
             let searchQuery = '';
+            let canteens = [];
+            let currentCanteenId = null;
 
             const container = document.getElementById('menu-cards-container');
             const searchInput = document.getElementById('menu-search-input');
             const pills = document.querySelectorAll('.category-pill');
+            const canteenSection = document.getElementById('canteen-section');
+            const canteenPills = document.getElementById('canteen-pills');
 
             // Default image mappings
             const defaultImages = {
@@ -437,8 +448,8 @@
                 'Boiled Eggs': 'Images/boiled-egg.jpg',
                 'Chai Rangi': 'Images/Chai Rangi.jpg',
                 'Chapati & Beans Offer': 'Images/Chapati Beans Offer.jpg',
-                'Ugali & Omena': 'Images/Ugali & Omena.jpg',
-                'Ugali & Mayai': 'Images/Ugali & Mayai.jpg',
+                'Ugali & Omena': 'Images/Ugali Omena.jpg',
+                'Ugali & Mayai': 'Images/Ugali mayai.jpg',
                 'Rice & Beans': 'Images/Rice and Beans.jpg',
                 'Smokie': 'Images/Smokie.jpg',
                 'Kahawa': 'Images/Kahawa.jpg',
@@ -471,6 +482,60 @@
                 };
             });
 
+            async function loadCanteens() {
+                try {
+                    if (typeof getCanteens !== 'function') return;
+                    const res = await getCanteens();
+                    canteens = (res && res.canteens) || [];
+                } catch (e) {
+                    console.log('Canteens unavailable, showing full menu:', e.message);
+                    canteens = [];
+                }
+                if (!canteens.length) {
+                    if (canteenSection) canteenSection.style.display = 'none';
+                    currentCanteenId = null;
+                    return;
+                }
+                renderCanteenPills();
+            }
+
+            function renderCanteenPills() {
+                const params = new URLSearchParams(window.location.search);
+                const requested = params.get('canteen');
+                const stored = localStorage.getItem('pwaniBiteCanteenId');
+                const cartCanteen = (typeof getCartCanteen === 'function') ? getCartCanteen() : null;
+
+                let selected = null;
+                if (requested) {
+                    selected = canteens.find(c => String(c.canteen_id) === requested || c.name.toLowerCase() === requested.toLowerCase()) || null;
+                }
+                if (!selected && cartCanteen && cartCanteen.canteen_id != null) {
+                    selected = canteens.find(c => c.canteen_id === cartCanteen.canteen_id) || null;
+                }
+                if (!selected && stored) {
+                    selected = canteens.find(c => String(c.canteen_id) === String(stored)) || null;
+                }
+                if (!selected) selected = canteens[0];
+                currentCanteenId = selected ? selected.canteen_id : null;
+
+                canteenPills.innerHTML = '';
+                canteens.forEach(canteen => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'canteen-pill' + (canteen.canteen_id === currentCanteenId ? ' active' : '');
+                    btn.dataset.canteenId = canteen.canteen_id;
+                    btn.innerHTML = `<strong>${escapeHtml(canteen.name)}</strong>${canteen.location ? `<small>${escapeHtml(canteen.location)}</small>` : ''}`;
+                    btn.addEventListener('click', function() {
+                        currentCanteenId = canteen.canteen_id;
+                        localStorage.setItem('pwaniBiteCanteenId', String(canteen.canteen_id));
+                        canteenPills.querySelectorAll('.canteen-pill').forEach(p => p.classList.remove('active'));
+                        btn.classList.add('active');
+                        renderMenu();
+                    });
+                    canteenPills.appendChild(btn);
+                });
+            }
+
             async function loadDynamicMenu() {
                 try {
                     if (typeof getFood === 'function') {
@@ -494,6 +559,9 @@
                 if (allFoodItems.length === 0) return;
 
                 const filtered = allFoodItems.filter(item => {
+                    const matchCanteen = !currentCanteenId ||
+                        item.canteen_id == null ||
+                        Number(item.canteen_id) === Number(currentCanteenId);
                     const matchCategory = (currentCategory === 'all') || 
                         (item.category && item.category.toLowerCase() === currentCategory.toLowerCase());
                     const price = Number(item.price);
@@ -509,7 +577,7 @@
                         item.id
                     ].filter(value => value !== null && value !== undefined).join(' ').toLowerCase();
                     const matchSearch = !searchQuery || searchableFields.includes(searchQuery);
-                    return matchCategory && matchSearch;
+                    return matchCanteen && matchCategory && matchSearch;
                 }).sort((a, b) => {
                     const rankA = CATEGORY_ORDER[a.category] ?? 99;
                     const rankB = CATEGORY_ORDER[b.category] ?? 99;
@@ -543,6 +611,7 @@
                             <div class="menu-card-media">
                                 <img src="${esc(img)}" alt="${esc(item.food_name)}" onerror="this.onerror=null;this.src='Images/Logo.jpg'">
                                 <span class="card-tag">${esc(category)}</span>
+                                ${item.canteen ? `<span class="card-canteen">${esc(item.canteen)}</span>` : ''}
                                 <span class="card-price">KSh ${Number.isFinite(price) ? price.toFixed(0) : '0'}</span>
                                 <span class="stock-badge card-stock ${badgeClass}">${stockText}</span>
                             </div>
@@ -567,7 +636,10 @@
                     if (btn) {
                         btn.addEventListener('click', function() {
                             if (typeof addToCart === 'function') {
-                                addToCart(item.food_name, parseFloat(item.price), item.food_id || null);
+                                addToCart(item.food_name, parseFloat(item.price), item.food_id || null, {
+                                    canteen_id: item.canteen_id != null ? item.canteen_id : null,
+                                    name: item.canteen || null
+                                });
                             }
                         });
                     }
@@ -592,7 +664,7 @@
                 });
             }
 
-            loadDynamicMenu();
+            loadCanteens().then(loadDynamicMenu);
         });
     </script>
 

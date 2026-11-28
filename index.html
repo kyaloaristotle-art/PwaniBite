@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="home-page-scroll">
 <head>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <meta charset="UTF-8">
@@ -112,6 +112,40 @@
     </section>
 
 
+    <!-- Campus Canteens -->
+    <section class="services" id="canteens-section">
+
+        <h2>Our Campus Canteens</h2>
+
+        <p style="color:#666; margin-bottom: 20px;">
+            Order from the canteen you like — or the one closest to your hostel.
+        </p>
+
+        <div class="service-container" id="canteen-cards">
+
+            <div class="service-card">
+                <h3>🏪 Main Canteen</h3>
+                <p>The main campus canteen — biggest menu and fastest service.</p>
+                <a href="menu.html" class="btn" style="display:inline-block; margin-top:10px;">View Menu</a>
+            </div>
+
+            <div class="service-card">
+                <h3>🏪 Savannah Canteen</h3>
+                <p>Serving comrades around the Savannah hostels.</p>
+                <a href="menu.html" class="btn" style="display:inline-block; margin-top:10px;">View Menu</a>
+            </div>
+
+            <div class="service-card">
+                <h3>🏪 Runda Canteen</h3>
+                <p>Serving comrades around the Runda hostels.</p>
+                <a href="menu.html" class="btn" style="display:inline-block; margin-top:10px;">View Menu</a>
+            </div>
+
+        </div>
+
+    </section>
+
+
     <!-- Popular Meals -->
     <section class="popular">
 
@@ -182,6 +216,29 @@
     </footer>
 
     <script src="script.js"></script>
+    <script>
+        // Populate canteen cards from the API; keep static fallbacks if offline.
+        document.addEventListener('DOMContentLoaded', async function() {
+            const container = document.getElementById('canteen-cards');
+            try {
+                if (typeof getCanteens !== 'function') return;
+                const res = await getCanteens();
+                const canteens = (res && res.canteens) || [];
+                if (!canteens.length) return;
+                const esc = (typeof escapeHtml === 'function') ? escapeHtml : (v) => String(v == null ? '' : v);
+                container.innerHTML = canteens.map(c => `
+                    <div class="service-card">
+                        <h3>🏪 ${esc(c.name)}</h3>
+                        <p>${esc(c.description || 'Campus canteen')}</p>
+                        ${c.location ? `<p><small>${esc(c.location)}</small></p>` : ''}
+                        <a href="menu.html?canteen=${c.canteen_id}" class="btn" style="display:inline-block; margin-top:10px;">Order Here</a>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.log('Using static canteen cards:', e.message);
+            }
+        });
+    </script>
 
 </body>
 </html>

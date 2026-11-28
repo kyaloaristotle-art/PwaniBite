@@ -56,3 +56,7 @@ The site opens at `http://localhost:8000/`; API routes remain at `/api/...`. The
 The existing frontend API contract is retained for authentication, users, food, orders, payments, delivery, feedback, reports, and M-Pesa. Authentication uses bcrypt hashes and HS256 Bearer JWTs compatible with the previous API. Set a strong `JWT_SECRET` in `backend/.env`; set `DJANGO_DEBUG=false` and `DJANGO_ALLOWED_HOSTS` for deployment. Configure `SERVER_URL` as a publicly reachable HTTPS URL for M-Pesa callbacks.
 
 See [the Django backend README](django_api/README.md) for configuration details. The old Express entry point and routes are retained as reference code and are no longer wired to the package scripts.
+
+## Multi-canteen support
+
+The site supports multiple campus canteens (Main, Savannah, Runda). Each food item belongs to one canteen and each order is fulfilled by a single canteen. For an existing database, apply `backend/database/migrations/2026-11-27-canteens.sql` once — it creates the `canteens` table, seeds the three campus canteens, adds `canteen_id` to `food` and `orders`, and assigns existing menu items to Main Canteen. New databases get all of this from `schema.sql`. Manage canteens at `/canteens.html` (admin) and assign items to a canteen in Menu Management.

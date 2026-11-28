@@ -81,4 +81,12 @@ Google documents the [Web client ID and origin setup](https://developers.google.
 
 The signed-in customer profile is available at `/profile`. It reads the customer's order history from `GET /api/orders/my-orders`; profile details, avatar uploads, favorites, saved addresses, and password changes use authenticated `/api/auth/...` and `/api/profile/...` endpoints. Apply `backend/database/migrations/2026-11-26-profile-features.sql` after the Google OAuth migration to add avatar, favorites, and address storage to an existing database.
 
+### Multi-canteen ordering
+
+Comrades choose one of the campus canteens (Main, Savannah, Runda) before ordering; each food item belongs to a canteen and each order is fulfilled by a single canteen. Apply `backend/database/migrations/2026-11-27-canteens.sql` once to an existing database (new databases get it from `schema.sql`). Canteens are managed via `GET/POST /api/canteens` and `GET/PUT/DELETE /api/canteens/<id>` (writes require admin), `GET /api/food` accepts a `canteen_id` filter, and food create/update accepts `canteen_id`. Order creation rejects carts spanning multiple canteens.
+
+### Canteen managers
+
+An admin can assign a user the `canteen_manager` role and choose one canteen in the Admin dashboard's user list. Managers can manage only that canteen's menu and order statuses from the Canteen Management page. The API scopes those records to the assigned canteen; user administration, canteen setup, reports, delivery assignment, and global controls remain admin-only. Apply `backend/database/migrations/2026-11-28-canteen-managers.sql` once after the canteens migration to an existing database.
+
 All existing food, order, payment, delivery, feedback, report, and M-Pesa paths are retained for the current frontend. Set `DJANGO_DEBUG=false`, a strong `DJANGO_SECRET_KEY`/`JWT_SECRET`, correct `DJANGO_ALLOWED_HOSTS`, and a reachable HTTPS `SERVER_URL` before deployment. The Django development server is for local use; use a production WSGI/ASGI server for deployment.

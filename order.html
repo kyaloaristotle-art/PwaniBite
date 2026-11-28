@@ -59,8 +59,8 @@
             <h2 id="order-heading">Food Order Form</h2>
 
             <p class="order-note">
-                Please provide the correct hostel and room details
-                so our delivery team can find you easily.
+                Delivery is available across campus. Tell us a nearby building,
+                landmark, or meeting point so the rider can find you.
             </p>
 
 
@@ -111,102 +111,22 @@
                 </div>
 
 
-                <!-- Hostel Details -->
-
-                <h3 class="form-heading">
-                    Hostel Delivery Details
-                </h3>
-
+                <h3 class="form-heading">Campus Delivery Location</h3>
 
                 <div class="form-group">
-
-                    <label for="hostel">
-                        Select Hostel
-                    </label>
-
-                    <select id="hostel" name="hostel" autocomplete="off" required aria-required="true" aria-describedby="hostel-help">
-
-                        <option value="">
-                            -- Select Hostel --
-                        </option>
-
-                        <option value="Kijani Hostel">
-                            Kijani Hostel
-                        </option>
-
-                        <option value="Mwangaza Hostel">
-                            Mwangaza Hostel
-                        </option>
-
-                        <option value="Bahari Hostel">
-                            Bahari Hostel
-                        </option>
-
-                        <option value="Pwani Hostel">
-                            Pwani Hostel
-                        </option>
-
-                        <option value="Umoja Hostel">
-                            Umoja Hostel
-                        </option>
-
-                    </select>
-                    <span id="hostel-help" class="error-message">Please select your hostel</span>
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="block">
-                        Block
-                    </label>
-
-                    <select id="block" name="block" autocomplete="off" required aria-required="true" aria-describedby="block-help">
-
-                        <option value="">
-                            -- Select Block --
-                        </option>
-
-                        <option value="Block A">
-                            Block A
-                        </option>
-
-                        <option value="Block B">
-                            Block B
-                        </option>
-
-                        <option value="Block C">
-                            Block C
-                        </option>
-
-                        <option value="Block D">
-                            Block D
-                        </option>
-
-                    </select>
-                    <span id="block-help" class="error-message">Please select your block</span>
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="room">
-                        Room Number
-                    </label>
-
+                    <label for="delivery-location">Where on campus should we meet you?</label>
                     <input
                         type="text"
-                        id="room"
-                        name="room"
-                        placeholder="e.g. A204"
+                        id="delivery-location"
+                        name="delivery_location"
+                        autocomplete="street-address"
+                        placeholder="e.g. Main library entrance or student centre"
                         required
                         aria-required="true"
-                        aria-describedby="room-help"
+                        aria-describedby="delivery-location-help"
+                        maxlength="255"
                     >
-                    <span id="room-help" class="error-message">Please enter your room number</span>
-
+                    <span id="delivery-location-help" class="error-message">Please enter a campus landmark or meeting point</span>
                 </div>
 
 
@@ -329,7 +249,7 @@
                             <input type="radio" name="payment-method" value="Cash" id="pay-cash" style="accent-color: #063b2f; width: 18px; height: 18px;">
                             <div>
                                 <strong style="display: block; color: #333; font-size: 15px;">💵 Cash on Delivery</strong>
-                                <small style="display: block; color: #555;">Pay rider at your hostel room</small>
+                                <small style="display: block; color: #555;">Pay the rider when your order arrives</small>
                             </div>
                         </label>
                     </div>
@@ -370,11 +290,11 @@
 
     <section class="delivery-notice">
 
-        <h2>🏠 Hostel Delivery</h2>
+        <h2>🏠 Campus Delivery</h2>
 
         <p>
             Once your order is prepared, our delivery team
-            will bring it to your selected hostel and room.
+            will bring it to the campus meeting point you provide.
         </p>
 
     </section>
@@ -389,7 +309,7 @@
         </p>
 
         <p>
-            Order Food • Hostel Delivery • Happy Comrades
+            Order Food • Campus Delivery • Happy Comrades
         </p>
 
     </footer>
@@ -404,16 +324,12 @@
                     const nameField = document.getElementById('name');
                     const phoneField = document.getElementById('phone');
                     const mpesaField = document.getElementById('mpesa-phone');
-                    const hostelField = document.getElementById('hostel');
-                    const blockField = document.getElementById('block');
-                    const roomField = document.getElementById('room');
+                    const locationField = document.getElementById('delivery-location');
 
                     if (nameField && !nameField.value) nameField.value = user.name || '';
                     if (phoneField && !phoneField.value) phoneField.value = user.phone || '';
                     if (mpesaField && !mpesaField.value) mpesaField.value = user.phone || '';
-                    if (hostelField && user.hostel) hostelField.value = user.hostel;
-                    if (blockField && user.block) blockField.value = user.block;
-                    if (roomField && user.room) roomField.value = user.room;
+                    if (locationField && user.delivery_location) locationField.value = user.delivery_location;
                 }
             }
 

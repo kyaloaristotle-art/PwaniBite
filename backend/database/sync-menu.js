@@ -44,6 +44,20 @@ async function syncMenu() {
         await connection.beginTransaction();
         await connection.query('UPDATE food SET availability = FALSE');
 
+        // Assign synced items to Main Canteen when the multi-canteen schema is present.
+        const [colRows] = await connection.query(
+            `SELECT COUNT(*) AS n FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'food' AND COLUMN_NAME = 'canteen_id'`
+        );
+        const hasCanteenColumn = colRows.length && Number(colRows[0].n) > 0;
+        let mainCanteenId = null;
+        if (hasCanteenColumn) {
+            const [canteenRows] = await connection.query(
+                "SELECT canteen_id FROM canteens WHERE name = 'Main Canteen' LIMIT 1"
+            ).catch(() => [[]]);
+            mainCanteenId = canteenRows.length ? canteenRows[0].canteen_id : null;
+        }
+
         for (const [name, description, price, category, aliases = []] of menu) {
             const candidates = [name, ...aliases];
             const [existing] = await connection.query(
@@ -52,9 +66,21 @@ async function syncMenu() {
             );
 
             if (existing.length) {
+                if (hasCanteenColumn) {
+                    await connection.query(
+                        'UPDATE food SET food_name = ?, description = ?, price = ?, category = ?, availability = TRUE, canteen_id = COALESCE(canteen_id, ?) WHERE food_id = ?',
+                        [name, description, price, category, mainCanteenId, existing[0].food_id]
+                    );
+                } else {
+                    await connection.query(
+                        'UPDATE food SET food_name = ?, description = ?, price = ?, category = ?, availability = TRUE WHERE food_id = ?',
+                        [name, description, price, category, existing[0].food_id]
+                    );
+                }
+            } else if (hasCanteenColumn) {
                 await connection.query(
-                    'UPDATE food SET food_name = ?, description = ?, price = ?, category = ?, availability = TRUE WHERE food_id = ?',
-                    [name, description, price, category, existing[0].food_id]
+                    'INSERT INTO food (food_name, description, price, category, canteen_id, availability, stock_quantity) VALUES (?, ?, ?, ?, ?, TRUE, 50)',
+                    [name, description, price, category, mainCanteenId]
                 );
             } else {
                 await connection.query(

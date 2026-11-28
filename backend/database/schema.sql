@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) UNIQUE NOT NULL,
     phone VARCHAR(15) UNIQUE NULL,
     password VARCHAR(255) NULL,
-    role ENUM('customer', 'admin', 'delivery', 'staff') DEFAULT 'customer',
+    role ENUM('customer', 'admin', 'delivery', 'staff', 'canteen_manager') DEFAULT 'customer',
+    managed_canteen_id INT NULL,
     hostel VARCHAR(50),
     block VARCHAR(50),
     room VARCHAR(20),
@@ -23,7 +24,8 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_email (email),
     INDEX idx_phone (phone),
-    INDEX idx_role (role)
+    INDEX idx_role (role),
+    INDEX idx_user_managed_canteen (managed_canteen_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
@@ -56,6 +58,31 @@ CREATE TABLE IF NOT EXISTS user_addresses (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
+-- CANTEENS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS canteens (
+    canteen_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description VARCHAR(255) NULL,
+    location VARCHAR(255) NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_canteen_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET @manager_fk_exists = (
+    SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND CONSTRAINT_NAME = 'fk_user_managed_canteen'
+);
+SET @manager_fk_sql = IF(@manager_fk_exists = 0,
+    'ALTER TABLE users ADD CONSTRAINT fk_user_managed_canteen FOREIGN KEY (managed_canteen_id) REFERENCES canteens(canteen_id) ON DELETE SET NULL',
+    'SELECT 1');
+PREPARE manager_fk_stmt FROM @manager_fk_sql;
+EXECUTE manager_fk_stmt;
+DEALLOCATE PREPARE manager_fk_stmt;
+
+-- ============================================
 -- FOOD TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS food (
@@ -65,12 +92,15 @@ CREATE TABLE IF NOT EXISTS food (
     price DECIMAL(10, 2) NOT NULL,
     image VARCHAR(255),
     category VARCHAR(50) NOT NULL,
+    canteen_id INT NULL,
     availability BOOLEAN DEFAULT TRUE,
     stock_quantity INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_category (category),
-    INDEX idx_availability (availability)
+    INDEX idx_availability (availability),
+    INDEX idx_food_canteen (canteen_id),
+    CONSTRAINT fk_food_canteen FOREIGN KEY (canteen_id) REFERENCES canteens(canteen_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS user_favorites (
@@ -90,6 +120,7 @@ CREATE TABLE IF NOT EXISTS orders (
     order_id INT AUTO_INCREMENT PRIMARY KEY,
     order_number VARCHAR(20) UNIQUE NOT NULL,
     user_id INT NOT NULL,
+    canteen_id INT NULL,
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     total_amount DECIMAL(10, 2) NOT NULL,
     delivery_location VARCHAR(255) NOT NULL,
@@ -104,7 +135,9 @@ CREATE TABLE IF NOT EXISTS orders (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id),
     INDEX idx_order_status (order_status),
-    INDEX idx_order_date (order_date)
+    INDEX idx_order_date (order_date),
+    INDEX idx_order_canteen (canteen_id),
+    CONSTRAINT fk_order_canteen FOREIGN KEY (canteen_id) REFERENCES canteens(canteen_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
@@ -192,10 +225,19 @@ INSERT INTO users (name, email, phone, password, role) VALUES
 ('Admin User', 'admin@pwanibite.com', '0712345678', '$2a$10$Ex1E0sWZ6If8Q3gh97BnRuQSJpJcH2bfnRggvZo0vFE.BoUIHfD3m', 'admin');
 
 -- ============================================
+-- INSERT DEFAULT CANTEENS
+-- ============================================
+INSERT INTO canteens (name, description, location) VALUES
+('Main Canteen', 'The main campus canteen', 'Main campus grounds'),
+('Savannah Canteen', 'Canteen serving the Savannah hostels', 'Savannah hostels area'),
+('Runda Canteen', 'Canteen serving the Runda hostels', 'Runda hostels area');
+
+-- ============================================
 -- INSERT MENU ITEMS (seed missing entries; existing entries are updated by name)
 -- ============================================
-INSERT INTO food (food_name, description, price, category, availability, stock_quantity)
-SELECT menu.food_name, menu.description, menu.price, menu.category, TRUE, 50
+INSERT INTO food (food_name, description, price, category, canteen_id, availability, stock_quantity)
+SELECT menu.food_name, menu.description, menu.price, menu.category,
+       (SELECT canteen_id FROM canteens WHERE name = 'Main Canteen' LIMIT 1), TRUE, 50
 FROM (
     SELECT 'Tamarind Juice' food_name, 'Fresh tamarind juice' description, 30.00 price, 'Juices' category UNION ALL
     SELECT 'Passion Juice', 'Fresh passion juice', 40.00, 'Juices' UNION ALL

@@ -17,8 +17,8 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import ContactMessage, Delivery, Feedback, Food, Order, OrderItem, Payment, User, UserAddress, UserFavorite, UserOAuthAccount
-from .permissions import IsAdmin, IsAdminOrDelivery, IsCustomer
+from .models import Canteen, ContactMessage, Delivery, Feedback, Food, Order, OrderItem, Payment, User, UserAddress, UserFavorite, UserOAuthAccount
+from .permissions import IsAdmin, IsAdminOrDelivery, IsCustomer, can_manage_canteen
 from .tokens import issue_token
 from .throttles import AuthAttemptThrottle
 
@@ -28,6 +28,7 @@ def public_user(user):
         "user_id": user.user_id, "name": user.name, "email": user.email,
         "phone": user.phone, "hostel": user.hostel, "block": user.block,
         "room": user.room, "avatar_url": user.avatar_url, "role": user.role,
+        "managed_canteen_id": user.managed_canteen_id,
     }
 
 
@@ -84,11 +85,24 @@ def parse_address_payload(body, current=None):
     return fields
 
 
+def serialize_canteen(canteen):
+    return {
+        "canteen_id": canteen.canteen_id,
+        "name": canteen.name,
+        "description": canteen.description,
+        "location": canteen.location,
+        "is_active": canteen.is_active,
+        "created_at": canteen.created_at,
+    }
+
+
 def serialize_food(food):
     return {
         "food_id": food.food_id, "food_name": food.food_name,
         "description": food.description, "price": food.price,
         "image": food.image, "category": food.category,
+        "canteen_id": food.canteen_id,
+        "canteen": food.canteen.name if food.canteen_id else None,
         "availability": food.availability, "stock_quantity": food.stock_quantity,
         "created_at": food.created_at, "updated_at": food.updated_at,
     }
@@ -110,6 +124,8 @@ def serialize_order(order, include_customer=False):
         "hostel": order.hostel, "block": order.block, "room": order.room,
         "delivery_time": order.delivery_time, "special_instructions": order.special_instructions,
         "order_status": order.order_status,
+        "canteen_id": order.canteen_id,
+        "canteen": order.canteen.name if order.canteen_id else None,
         "items": [serialize_item(item) for item in order.items.select_related("food").all()],
     }
     if include_customer:
@@ -128,7 +144,7 @@ def parse_date(value):
 def parse_food_payload(body, food=None):
     """Validate and normalize fields accepted by food create/update endpoints."""
     fields = {}
-    for key in ("food_name", "description", "price", "category", "availability", "stock_quantity", "image"):
+    for key in ("food_name", "description", "price", "category", "availability", "stock_quantity", "image", "canteen_id"):
         if key in body:
             fields[key] = body[key]
     if food is None and not all(fields.get(key) not in (None, "") for key in ("food_name", "price", "category")):
@@ -152,6 +168,18 @@ def parse_food_payload(body, food=None):
         fields["stock_quantity"] = int(value)
     if "availability" in fields and not isinstance(fields["availability"], bool):
         raise ValueError("Availability must be true or false")
+    if "canteen_id" in fields:
+        raw_canteen = fields["canteen_id"]
+        if raw_canteen in (None, ""):
+            fields["canteen_id"] = None
+        else:
+            try:
+                canteen_id = int(raw_canteen)
+            except (TypeError, ValueError):
+                raise ValueError("Canteen is invalid") from None
+            if not Canteen.objects.filter(canteen_id=canteen_id).exists():
+                raise ValueError("Canteen not found")
+            fields["canteen_id"] = canteen_id
     for key, limit in (("description", None), ("image", 255)):
         if key in fields and fields[key] is not None:
             fields[key] = str(fields[key])
@@ -455,6 +483,86 @@ def profile_address_detail(request, address_id):
     return Response({"address": serialize_address(address)})
 
 
+def parse_canteen_payload(body, canteen=None):
+    fields = {}
+    for key in ("name", "description", "location", "is_active"):
+        if key in body:
+            fields[key] = body[key]
+    if canteen is None and "name" not in fields:
+        raise ValueError("Canteen name is required")
+    if "name" in fields:
+        fields["name"] = str(fields["name"]).strip()
+        if not 1 <= len(fields["name"]) <= 100:
+            raise ValueError("Canteen name must be between 1 and 100 characters")
+    for key, limit in (("description", 255), ("location", 255)):
+        if key in fields:
+            fields[key] = str(fields[key] or "").strip() or None
+            if fields[key] and len(fields[key]) > limit:
+                raise ValueError(f"{key.title()} must be {limit} characters or fewer")
+    if "is_active" in fields:
+        value = fields["is_active"]
+        if isinstance(value, str):
+            value = value.lower() in ("true", "1", "yes", "on")
+        fields["is_active"] = bool(value)
+    return fields
+
+
+@api_view(["GET", "POST"])
+def canteens_collection(request):
+    if request.method == "GET":
+        canteens = Canteen.objects.order_by("name")
+        is_admin = bool(request.user and request.user.is_authenticated and request.user.role == "admin")
+        if request.user and request.user.is_authenticated and request.user.role == "canteen_manager":
+            canteens = canteens.filter(canteen_id=request.user.managed_canteen_id)
+        elif not is_admin:
+            canteens = canteens.filter(is_active=True)
+        return Response({"canteens": [serialize_canteen(canteen) for canteen in canteens]})
+
+    if not request.user or not request.user.is_authenticated or request.user.role != "admin":
+        return error("Admin access required", status.HTTP_403_FORBIDDEN)
+    try:
+        fields = parse_canteen_payload(request.data)
+    except ValueError as exc:
+        return error(str(exc))
+    if Canteen.objects.filter(name__iexact=fields["name"]).exists():
+        return error("A canteen with this name already exists", status.HTTP_409_CONFLICT)
+    canteen = Canteen.objects.create(
+        name=fields["name"],
+        description=fields.get("description"),
+        location=fields.get("location"),
+        is_active=fields.get("is_active", True),
+    )
+    return Response({"message": "Canteen added successfully", "canteen": serialize_canteen(canteen)}, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "PUT", "DELETE"])
+def canteen_detail(request, canteen_id):
+    canteen = Canteen.objects.filter(canteen_id=canteen_id).first()
+    if not canteen:
+        return error("Canteen not found", status.HTTP_404_NOT_FOUND)
+    if request.method == "GET":
+        return Response({"canteen": serialize_canteen(canteen)})
+
+    if not request.user or not request.user.is_authenticated or request.user.role != "admin":
+        return error("Admin access required", status.HTTP_403_FORBIDDEN)
+    if request.method == "DELETE":
+        if Food.objects.filter(canteen_id=canteen_id).exists():
+            return error("This canteen still has menu items. Reassign or remove them first, or deactivate the canteen instead.", status.HTTP_409_CONFLICT)
+        canteen.delete()
+        return Response({"message": "Canteen deleted successfully"})
+
+    try:
+        fields = parse_canteen_payload(request.data, canteen)
+    except ValueError as exc:
+        return error(str(exc))
+    if "name" in fields and Canteen.objects.filter(name__iexact=fields["name"]).exclude(canteen_id=canteen_id).exists():
+        return error("A canteen with this name already exists", status.HTTP_409_CONFLICT)
+    for field, value in fields.items():
+        setattr(canteen, field, value)
+    canteen.save()
+    return Response({"message": "Canteen updated successfully", "canteen": serialize_canteen(canteen)})
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def food_categories(request):
@@ -463,8 +571,10 @@ def food_categories(request):
 
 @api_view(["POST"])
 def food_image_upload(request):
-    if not request.user or not request.user.is_authenticated or request.user.role != "admin":
-        return error("Admin access required", status.HTTP_403_FORBIDDEN)
+    if not request.user or not request.user.is_authenticated or request.user.role not in ("admin", "canteen_manager"):
+        return error("Canteen management access required", status.HTTP_403_FORBIDDEN)
+    if request.user.role == "canteen_manager" and not request.user.managed_canteen_id:
+        return error("Your account is not assigned to a canteen", status.HTTP_403_FORBIDDEN)
     uploaded = request.FILES.get("image")
     if not uploaded:
         return error("Choose an image to upload")
@@ -483,21 +593,31 @@ def food_image_upload(request):
 @api_view(["GET", "POST"])
 def food_collection(request):
     if request.method == "GET":
-        foods = Food.objects.all()
+        foods = Food.objects.select_related("canteen").all()
+        if request.user and request.user.is_authenticated and request.user.role == "canteen_manager":
+            foods = foods.filter(canteen_id=request.user.managed_canteen_id)
         if request.query_params.get("category"):
             foods = foods.filter(category=request.query_params["category"])
+        if request.query_params.get("canteen_id"):
+            foods = foods.filter(canteen_id=request.query_params["canteen_id"])
         available = request.query_params.get("available")
         if available is not None:
             foods = foods.filter(availability=(available.lower() == "true"))
         return Response({"food": [serialize_food(food) for food in foods.order_by("food_name")]})
-    if not request.user or not request.user.is_authenticated or request.user.role != "admin":
-        return error("Admin access required", status.HTTP_403_FORBIDDEN)
+    if not request.user or not request.user.is_authenticated or request.user.role not in ("admin", "canteen_manager"):
+        return error("Canteen management access required", status.HTTP_403_FORBIDDEN)
     body = request.data
     try:
         fields = parse_food_payload(body)
         fields.setdefault("description", "")
         fields.setdefault("availability", True)
         fields.setdefault("stock_quantity", 0)
+        if request.user.role == "canteen_manager":
+            if not request.user.managed_canteen_id:
+                return error("Your account is not assigned to a canteen", status.HTTP_403_FORBIDDEN)
+            if fields.get("canteen_id") not in (None, "", request.user.managed_canteen_id, str(request.user.managed_canteen_id)):
+                return error("You can only manage menu items for your assigned canteen", status.HTTP_403_FORBIDDEN)
+            fields["canteen_id"] = request.user.managed_canteen_id
         food = Food.objects.create(**fields)
     except (InvalidOperation, TypeError, ValueError, OverflowError) as exc:
         return error(str(exc) or "Invalid food item data")
@@ -511,8 +631,8 @@ def food_detail(request, food_id):
         return error("Food item not found", status.HTTP_404_NOT_FOUND)
     if request.method == "GET":
         return Response({"food": serialize_food(food)})
-    if not request.user or not request.user.is_authenticated or request.user.role != "admin":
-        return error("Admin access required", status.HTTP_403_FORBIDDEN)
+    if not can_manage_canteen(request.user, food.canteen_id):
+        return error("You can only manage menu items for your assigned canteen", status.HTTP_403_FORBIDDEN)
     if request.method == "DELETE":
         if OrderItem.objects.filter(food_id=food_id).exists():
             return error("Food item is part of an order and cannot be deleted", status.HTTP_409_CONFLICT)
@@ -521,6 +641,10 @@ def food_detail(request, food_id):
     body = request.data
     try:
         fields = parse_food_payload(body, food)
+        if request.user.role == "canteen_manager":
+            if "canteen_id" in fields and str(fields["canteen_id"]) != str(request.user.managed_canteen_id):
+                return error("You can only manage menu items for your assigned canteen", status.HTTP_403_FORBIDDEN)
+            fields["canteen_id"] = request.user.managed_canteen_id
         for field, value in fields.items():
             setattr(food, field, value)
         food.save()
@@ -534,9 +658,13 @@ def order_collection(request):
     if not request.user or not request.user.is_authenticated:
         return error("Authentication required", status.HTTP_401_UNAUTHORIZED)
     if request.method == "GET":
-        if request.user.role != "admin":
-            return error("Admin access required", status.HTTP_403_FORBIDDEN)
-        orders = Order.objects.select_related("user").all().order_by("-order_date")
+        if request.user.role not in ("admin", "canteen_manager"):
+            return error("Canteen management access required", status.HTTP_403_FORBIDDEN)
+        orders = Order.objects.select_related("user", "canteen").all().order_by("-order_date")
+        if request.user.role == "canteen_manager":
+            if not request.user.managed_canteen_id:
+                return error("Your account is not assigned to a canteen", status.HTTP_403_FORBIDDEN)
+            orders = orders.filter(canteen_id=request.user.managed_canteen_id)
         if request.query_params.get("status"):
             orders = orders.filter(order_status=request.query_params["status"])
         start, end = parse_date(request.query_params.get("start_date")), parse_date(request.query_params.get("end_date"))
@@ -552,9 +680,11 @@ def order_collection(request):
     items = body.get("items")
     if not isinstance(items, list) or not items:
         return error("Order must contain at least one item")
-    for field in ("delivery_location", "hostel", "block", "room"):
-        if not str(body.get(field, "")).strip():
-            return error(f"{field.replace('_', ' ').title()} is required")
+    delivery_location = str(body.get("delivery_location", "")).strip()
+    if len(delivery_location) < 3:
+        return error("A campus delivery location is required")
+    if len(delivery_location) > 255:
+        return error("Delivery location must be 255 characters or fewer")
 
     parsed_items = []
     needed = {}
@@ -590,13 +720,28 @@ def order_collection(request):
             if not food.availability or (food.stock_quantity is not None and food.stock_quantity < quantity):
                 return error(f'Sorry, "{food.food_name}" is out of stock or does not have enough quantity.', status.HTTP_409_CONFLICT)
 
+        # One order = one canteen. All items must belong to the same canteen.
+        order_canteen_ids = {food.canteen_id for food in locked_foods.values()}
+        if len(order_canteen_ids) > 1:
+            return error("All items in an order must come from the same canteen. Please order from one canteen at a time.", status.HTTP_400_BAD_REQUEST)
+        order_canteen_id = next(iter(order_canteen_ids))
+        requested_canteen_id = body.get("canteen_id")
+        if requested_canteen_id not in (None, ""):
+            try:
+                requested_canteen_id = int(requested_canteen_id)
+            except (TypeError, ValueError):
+                return error("Canteen is invalid")
+            if order_canteen_id != requested_canteen_id:
+                return error("The items in your cart do not all belong to the selected canteen. Please review your cart.", status.HTTP_400_BAD_REQUEST)
+
         total = Decimal("0.00")
         order_number = f"PB{int(time.time() * 1000) % 1_000_000:06d}{secrets.randbelow(90) + 10}"
         order = Order.objects.create(
-            order_number=order_number, user=request.user, total_amount=0,
-            delivery_location=str(body["delivery_location"]).strip(),
-            hostel=str(body["hostel"]).strip(), block=str(body["block"]).strip(),
-            room=str(body["room"]).strip(), delivery_time=body.get("delivery_time"),
+            order_number=order_number, user=request.user, canteen_id=order_canteen_id, total_amount=0,
+            delivery_location=delivery_location,
+            hostel=str(body.get("hostel", "")).strip(),
+            block=str(body.get("block", "")).strip(),
+            room=str(body.get("room", "")).strip(), delivery_time=body.get("delivery_time"),
             special_instructions=body.get("special_instructions", ""), order_status="Pending",
         )
         for food_id, quantity in parsed_items:
@@ -623,27 +768,30 @@ def order_collection(request):
 @api_view(["GET"])
 @permission_classes([IsCustomer])
 def my_orders(request):
-    orders = Order.objects.filter(user_id=request.user.user_id).order_by("-order_date")
+    orders = Order.objects.filter(user_id=request.user.user_id).select_related("canteen").order_by("-order_date")
     return Response({"orders": [serialize_order(order) for order in orders]})
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def order_detail(request, order_id):
-    order = Order.objects.filter(order_id=order_id).select_related("user").first()
+    order = Order.objects.filter(order_id=order_id).select_related("user", "canteen").first()
     if not order:
         return error("Order not found", status.HTTP_404_NOT_FOUND)
-    if request.user.role != "admin" and order.user_id != request.user.user_id:
+    can_manage_order = request.user.role == "canteen_manager" and can_manage_canteen(request.user, order.canteen_id)
+    if request.user.role != "admin" and not can_manage_order and order.user_id != request.user.user_id:
         return error("You are not authorized to view this order", status.HTTP_403_FORBIDDEN)
-    return Response({"order": serialize_order(order, request.user.role == "admin")})
+    return Response({"order": serialize_order(order, request.user.role in ("admin", "canteen_manager"))})
 
 
 @api_view(["PUT"])
-@permission_classes([IsAdmin])
+@permission_classes([IsAuthenticated])
 def order_status(request, order_id):
     order = Order.objects.filter(order_id=order_id).first()
     if not order:
         return error("Order not found", status.HTTP_404_NOT_FOUND)
+    if not can_manage_canteen(request.user, order.canteen_id):
+        return error("You can only update orders for your assigned canteen", status.HTTP_403_FORBIDDEN)
     new_status = request.data.get("order_status")
     if new_status not in Order.STATUSES:
         return error("Invalid order status")
@@ -702,12 +850,22 @@ def user_detail(request, user_id):
         return Response({"message": "User deleted successfully"})
     body = request.data
     role = body.get("role", user.role)
-    if role not in ("customer", "admin", "delivery", "staff"):
+    if role not in ("customer", "admin", "delivery", "staff", "canteen_manager"):
         return error("Invalid user role")
+    managed_canteen_id = None
+    if role == "canteen_manager":
+        raw_canteen_id = body.get("managed_canteen_id", user.managed_canteen_id)
+        try:
+            managed_canteen_id = int(raw_canteen_id)
+        except (TypeError, ValueError):
+            return error("Select a canteen for this manager")
+        if not Canteen.objects.filter(canteen_id=managed_canteen_id, is_active=True).exists():
+            return error("Select an active canteen for this manager")
     for field in ("name", "email", "phone", "hostel", "block", "room"):
         if field in body:
             setattr(user, field, body[field])
     user.role = role
+    user.managed_canteen_id = managed_canteen_id
     try:
         user.save()
     except IntegrityError:

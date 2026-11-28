@@ -214,6 +214,46 @@ async function getCurrentUser() {
     return await handleResponse(response);
 }
 
+// ============ CANTEENS ============
+
+// Get canteens (public gets active only; admins get all)
+async function getCanteens() {
+    const response = await fetch(`${API_BASE_URL}/canteens`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+    return await handleResponse(response);
+}
+
+// Create canteen (admin only)
+async function createCanteen(canteenData) {
+    const response = await fetch(`${API_BASE_URL}/canteens`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(canteenData)
+    });
+    return await handleResponse(response);
+}
+
+// Update canteen (admin only)
+async function updateCanteen(id, canteenData) {
+    const response = await fetch(`${API_BASE_URL}/canteens/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(canteenData)
+    });
+    return await handleResponse(response);
+}
+
+// Delete canteen (admin only)
+async function deleteCanteen(id) {
+    const response = await fetch(`${API_BASE_URL}/canteens/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    });
+    return await handleResponse(response);
+}
+
 // ============ FOOD ============
 
 // Get all food items
@@ -658,6 +698,11 @@ function isAdmin() {
     return user.role === 'admin';
 }
 
+function isCanteenManager() {
+    const user = getCurrentUserFromStorage();
+    return user.role === 'canteen_manager';
+}
+
 // Check if user is customer
 function isCustomer() {
     const user = getCurrentUserFromStorage();
@@ -781,6 +826,7 @@ if (typeof module !== 'undefined' && module.exports) {
         updateUser,
         isAuthenticated,
         isAdmin,
+        isCanteenManager,
         isCustomer,
         isDelivery,
         getCurrentUserFromStorage

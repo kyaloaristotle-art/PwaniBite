@@ -9,6 +9,7 @@ class User(models.Model):
     phone = models.CharField(max_length=15, unique=True, null=True, blank=True)
     password = models.CharField(max_length=255, null=True, blank=True)
     role = models.CharField(max_length=20, default="customer")
+    managed_canteen_id = models.IntegerField(null=True, blank=True)
     hostel = models.CharField(max_length=50, null=True, blank=True)
     block = models.CharField(max_length=50, null=True, blank=True)
     room = models.CharField(max_length=20, null=True, blank=True)
@@ -29,6 +30,20 @@ class User(models.Model):
         db_table = "users"
 
 
+class Canteen(models.Model):
+    canteen_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True)
+    description = models.CharField(max_length=255, null=True, blank=True)
+    location = models.CharField(max_length=255, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        managed = False
+        db_table = "canteens"
+
+
 class Food(models.Model):
     food_id = models.AutoField(primary_key=True)
     food_name = models.CharField(max_length=100)
@@ -36,6 +51,7 @@ class Food(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     image = models.CharField(max_length=255, null=True, blank=True)
     category = models.CharField(max_length=50)
+    canteen = models.ForeignKey(Canteen, db_column="canteen_id", on_delete=models.DO_NOTHING, null=True, blank=True, related_name="foods")
     availability = models.BooleanField(default=True)
     stock_quantity = models.IntegerField(default=0, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -93,6 +109,7 @@ class Order(models.Model):
     order_id = models.AutoField(primary_key=True)
     order_number = models.CharField(max_length=20, unique=True)
     user = models.ForeignKey(User, db_column="user_id", on_delete=models.DO_NOTHING, related_name="orders")
+    canteen = models.ForeignKey(Canteen, db_column="canteen_id", on_delete=models.DO_NOTHING, null=True, blank=True, related_name="orders")
     order_date = models.DateTimeField(auto_now_add=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     delivery_location = models.CharField(max_length=255)

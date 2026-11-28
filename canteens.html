@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canteen Management | PwaniBite Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+</head>
+<body>
+
+    <!-- Admin Navigation -->
+    <nav class="admin-navbar">
+
+        <div class="admin-logo">
+
+            <img src="Images/Logo.jpg"
+                 alt="PwaniBite Logo">
+
+            <div>
+                <span>PwaniBite</span>
+                <small>Admin Dashboard</small>
+            </div>
+
+        </div>
+
+
+        <div class="admin-user">
+
+            <span>👨‍💼</span>
+
+            <div>
+                <strong>Administrator</strong>
+                <small>Canteen Manager</small>
+            </div>
+
+        </div>
+
+    </nav>
+
+    <!-- Dashboard Layout -->
+    <div class="dashboard">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+
+            <h3>Dashboard</h3>
+
+            <ul>
+
+                <li>
+                    <a href="admin.html">
+                        🏠 Dashboard
+                    </a>
+                </li>
+
+                <li>
+                    <a href="#orders">
+                        🛒 Orders
+                    </a>
+                </li>
+
+                <li>
+                    <a href="menu-management.html">
+                        🍛 Menu
+                    </a>
+                </li>
+
+                <li>
+                    <a href="canteens.html" class="active">
+                        🏪 Canteens
+                    </a>
+                </li>
+
+                <li>
+                    <a href="delivery-portal.html">
+                        🚚 Delivery
+                    </a>
+                </li>
+
+                <li>
+                    <a href="index.html">
+                        🌐 View Website
+                    </a>
+                </li>
+
+            </ul>
+
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+
+            <!-- Page Header -->
+            <div class="dashboard-header">
+
+                <div>
+                    <h1>Canteen Management</h1>
+                    <p>Add, edit, or deactivate the campus canteens comrades can order from</p>
+                </div>
+
+                <button class="dashboard-btn" onclick="showCanteenModal()">
+                    + Add New Canteen
+                </button>
+
+            </div>
+
+            <!-- Canteens -->
+            <section class="dashboard-card">
+
+                <div class="card-header">
+
+                    <div>
+                        <h2>Campus Canteens</h2>
+                        <p>Main, Savannah, and Runda canteens — each with its own menu</p>
+                    </div>
+
+                </div>
+
+                <div id="canteens-list">
+                    <!-- Canteens will be populated by JavaScript -->
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- Add/Edit Canteen Modal -->
+    <div id="canteen-modal" class="order-confirmation-modal" style="display: none;">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h2 id="canteen-modal-title">Add New Canteen</h2>
+
+                <button class="close-modal" onclick="closeCanteenModal()" aria-label="Close modal">&times;</button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <form id="canteen-form" autocomplete="off">
+
+                    <input type="hidden" id="canteen-id">
+
+                    <div class="form-group">
+
+                        <label for="canteen-name">Canteen Name</label>
+
+                        <input
+                            type="text"
+                            id="canteen-name"
+                            name="name"
+                            placeholder="e.g., Savannah Canteen"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="canteen-location">Location</label>
+
+                        <input
+                            type="text"
+                            id="canteen-location"
+                            name="location"
+                            placeholder="e.g., Savannah hostels area"
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="canteen-description">Description</label>
+
+                        <textarea
+                            id="canteen-description"
+                            name="description"
+                            rows="3"
+                            placeholder="Short description shown to comrades"
+                        ></textarea>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="canteen-active">
+                            <input
+                                type="checkbox"
+                                id="canteen-active"
+                                name="is_active"
+                                checked
+                            >
+                            Active — comrades can order from this canteen
+                        </label>
+
+                    </div>
+
+                    <button type="submit" class="auth-submit">
+                        Save Canteen
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer>
+
+        <p>
+            &copy; 2026 PwaniBite Admin Dashboard
+        </p>
+
+        <p>
+            Canteens • Menu • Orders • Delivery
+        </p>
+
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let currentCanteens = [];
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (typeof isAuthenticated === 'function' && typeof isAdmin === 'function') {
+                if (!isAuthenticated() || !isAdmin()) {
+                    alert('Access restricted: Administrator privileges required.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+            }
+            await loadCanteens();
+            document.getElementById('canteen-form').addEventListener('submit', saveCanteen);
+        });
+
+        async function loadCanteens() {
+            const list = document.getElementById('canteens-list');
+            list.innerHTML = '<p style="text-align: center; color: #666; padding: 30px;">Loading canteens...</p>';
+
+            try {
+                if (typeof getCanteens === 'function') {
+                    const res = await getCanteens();
+                    currentCanteens = (res && res.canteens) || [];
+                }
+            } catch (err) {
+                console.warn('API getCanteens failed:', err.message);
+            }
+
+            if (!currentCanteens.length) {
+                list.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No canteens found</p>';
+                return;
+            }
+
+            const esc = (typeof escapeHtml === 'function') ? escapeHtml : (v) => String(v == null ? '' : v);
+            let html = '';
+            currentCanteens.forEach(canteen => {
+                html += `
+                    <div class="menu-item-card">
+                        <div class="menu-item-info">
+                            <h3>${esc(canteen.name)}</h3>
+                            <p>${esc(canteen.description || 'Campus canteen')}</p>
+                            <p><strong>Location:</strong> ${esc(canteen.location || '—')}</p>
+                            <p><strong>Status:</strong> <span class="${canteen.is_active ? 'available' : 'unavailable'}">${canteen.is_active ? 'Active' : 'Inactive'}</span></p>
+                        </div>
+                        <div class="menu-item-actions">
+                            <button class="btn" onclick="editCanteen(${JSON.stringify(String(canteen.canteen_id))})">Edit</button>
+                            <button class="btn secondary-btn" onclick="removeCanteen(${JSON.stringify(String(canteen.canteen_id))})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            list.innerHTML = html;
+        }
+
+        function showCanteenModal(canteen) {
+            document.getElementById('canteen-modal-title').textContent = canteen ? 'Edit Canteen' : 'Add New Canteen';
+            document.getElementById('canteen-id').value = canteen ? canteen.canteen_id : '';
+            document.getElementById('canteen-name').value = canteen ? canteen.name : '';
+            document.getElementById('canteen-location').value = canteen ? (canteen.location || '') : '';
+            document.getElementById('canteen-description').value = canteen ? (canteen.description || '') : '';
+            document.getElementById('canteen-active').checked = canteen ? !!canteen.is_active : true;
+            document.getElementById('canteen-modal').style.display = 'flex';
+        }
+
+        function editCanteen(id) {
+            const canteen = currentCanteens.find(c => String(c.canteen_id) === String(id));
+            if (canteen) showCanteenModal(canteen);
+        }
+
+        async function removeCanteen(id) {
+            if (!confirm('Delete this canteen? Canteens with menu items cannot be deleted — deactivate it instead.')) return;
+            try {
+                if (typeof window.deleteCanteen !== 'function') throw new Error('Canteen deletion is unavailable');
+                await window.deleteCanteen(id);
+                alert('Canteen deleted successfully!');
+            } catch (err) {
+                alert('Could not delete canteen: ' + (err.message || 'Please try again.'));
+            }
+            await loadCanteens();
+        }
+
+        async function saveCanteen(e) {
+            e.preventDefault();
+            const id = document.getElementById('canteen-id').value;
+            const payload = {
+                name: document.getElementById('canteen-name').value.trim(),
+                location: document.getElementById('canteen-location').value.trim(),
+                description: document.getElementById('canteen-description').value.trim(),
+                is_active: document.getElementById('canteen-active').checked
+            };
+
+            const saveBtn = e.target.querySelector('button[type="submit"]');
+            const origText = saveBtn.textContent;
+            saveBtn.textContent = 'Saving...';
+            saveBtn.disabled = true;
+
+            let saved = false;
+            try {
+                if (id) {
+                    await updateCanteen(id, payload);
+                    alert('Canteen updated successfully!');
+                } else {
+                    await createCanteen(payload);
+                    alert('Canteen added successfully!');
+                }
+                saved = true;
+            } catch (err) {
+                console.error('Canteen save error:', err);
+                alert('Could not save the canteen: ' + (err.message || 'Please try again.'));
+            } finally {
+                saveBtn.textContent = origText;
+                saveBtn.disabled = false;
+            }
+            if (saved) {
+                closeCanteenModal();
+                await loadCanteens();
+            }
+        }
+
+        function closeCanteenModal() {
+            document.getElementById('canteen-modal').style.display = 'none';
+        }
+    </script>
+
+    <style>
+        .menu-item-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-item-info h3 {
+            color: #063b2f;
+            margin-bottom: 10px;
+        }
+
+        .menu-item-info p {
+            color: #555;
+            margin: 5px 0;
+        }
+
+        .menu-item-info .available {
+            color: #065f46;
+            font-weight: bold;
+        }
+
+        .menu-item-info .unavailable {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+    </style>
+
+</body>
+</html>

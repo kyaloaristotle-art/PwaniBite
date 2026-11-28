@@ -85,6 +85,12 @@
                 </li>
 
                 <li>
+                    <a href="canteens.html">
+                        🏪 Canteens
+                    </a>
+                </li>
+
+                <li>
                     <a href="#customers">
                         👥 Customers
                     </a>
@@ -260,7 +266,9 @@
 
                                 <th>Meal</th>
 
-                                <th>Hostel</th>
+                                <th>Canteen</th>
+
+                                <th>Delivery Location</th>
 
                                 <th>Total</th>
 
@@ -566,6 +574,11 @@
                             Manage Menu
                         </a>
 
+                        <a href="canteens.html">
+                            <span>🏪</span>
+                            Canteens
+                        </a>
+
                         <a href="#orders">
                             <span>🛒</span>
                             View Orders
@@ -763,10 +776,10 @@
 
                     <div>
 
-                        <h2>Customers</h2>
+                        <h2>Users and Canteen Managers</h2>
 
                         <p>
-                            Registered users and their roles
+                            Assign managers to a canteen. Only admins can change roles and assignments.
                         </p>
 
                     </div>
@@ -792,6 +805,8 @@
 
                                 <th>Role</th>
 
+                                <th>Managed Canteen</th>
+
                             </tr>
 
                         </thead>
@@ -799,7 +814,7 @@
 
                         <tbody id="customers-table-body">
 
-                            <tr><td colspan="5" style="text-align: center; color: #666; padding: 20px;">Loading customers...</td></tr>
+                            <tr><td colspan="6" style="text-align: center; color: #666; padding: 20px;">Loading customers...</td></tr>
 
                         </tbody>
 
@@ -833,7 +848,7 @@
     <script>
         const esc = (typeof escapeHtml === 'function') ? escapeHtml : (v) => String(v == null ? '' : v);
         const ORDER_STATUSES = ['Pending', 'Preparing', 'Out for Delivery', 'Delivered', 'Cancelled'];
-        const USER_ROLES = ['customer', 'admin', 'delivery', 'staff'];
+        const USER_ROLES = ['customer', 'admin', 'delivery', 'staff', 'canteen_manager'];
 
         document.addEventListener('DOMContentLoaded', async function() {
             if (typeof isAuthenticated === 'function' && typeof isAdmin === 'function') {
@@ -847,12 +862,13 @@
         });
 
         async function loadAdminDashboard() {
-            const [statsRes, ordersRes, popularRes, feedbackRes, usersRes] = await Promise.allSettled([
+            const [statsRes, ordersRes, popularRes, feedbackRes, usersRes, canteensRes] = await Promise.allSettled([
                 typeof getDashboardStats === 'function' ? getDashboardStats() : Promise.reject(new Error('no api')),
                 typeof getOrders === 'function' ? getOrders() : Promise.reject(new Error('no api')),
                 typeof getPopularItems === 'function' ? getPopularItems(5) : Promise.reject(new Error('no api')),
                 typeof getFeedback === 'function' ? getFeedback() : Promise.reject(new Error('no api')),
-                typeof getUsers === 'function' ? getUsers() : Promise.reject(new Error('no api'))
+                typeof getUsers === 'function' ? getUsers() : Promise.reject(new Error('no api')),
+                typeof getCanteens === 'function' ? getCanteens() : Promise.reject(new Error('no api'))
             ]);
 
             renderStats(statsRes.status === 'fulfilled' ? statsRes.value : null);
@@ -860,7 +876,7 @@
             renderDeliveryCounts(statsRes.status === 'fulfilled' ? statsRes.value : null);
             renderPopularMeals(popularRes.status === 'fulfilled' ? popularRes.value : null);
             renderFeedback(feedbackRes.status === 'fulfilled' ? feedbackRes.value : null);
-            renderCustomers(usersRes.status === 'fulfilled' ? usersRes.value : null);
+            renderCustomers(usersRes.status === 'fulfilled' ? usersRes.value : null, canteensRes.status === 'fulfilled' ? canteensRes.value : null);
         }
 
         function renderStats(statsRes) {
@@ -887,7 +903,7 @@
             const orders = (ordersRes && ordersRes.orders) || [];
 
             if (orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666; padding: 20px;">No orders yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666; padding: 20px;">No orders yet</td></tr>';
                 return;
             }
 
@@ -907,7 +923,8 @@
                     '<td><strong>' + esc(order.order_number || ('#' + order.order_id)) + '</strong></td>' +
                     '<td>' + esc(order.customer_name || 'Student') + '</td>' +
                     '<td>' + mealText + '</td>' +
-                    '<td>' + esc(order.hostel || '—') + '</td>' +
+                    '<td>' + esc(order.canteen || '—') + '</td>' +
+                    '<td>' + esc(order.delivery_location || order.hostel || '—') + '</td>' +
                     '<td>KSh ' + Number(order.total_amount || 0).toLocaleString() + '</td>' +
                     '<td><select id="order-status-' + order.order_id + '" name="order_status_' + order.order_id + '" class="status-select status ' + statusClass + '" data-order-id="' + order.order_id + '" onchange="adminUpdateOrderStatus(this)">' + options + '</select></td>' +
                     '</tr>';
@@ -976,19 +993,25 @@
             }).join('');
         }
 
-        function renderCustomers(usersRes) {
+        function renderCustomers(usersRes, canteensRes) {
             const tbody = document.getElementById('customers-table-body');
             if (!tbody) return;
             const users = (usersRes && usersRes.users) || [];
 
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666; padding: 20px;">No users found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666; padding: 20px;">No users found</td></tr>';
                 return;
             }
+
+            const canteens = (canteensRes && canteensRes.canteens) || [];
 
             tbody.innerHTML = users.map(u => {
                 const options = USER_ROLES.map(r =>
                     `<option value="${r}" ${r === u.role ? 'selected' : ''}>${r}</option>`
+                ).join('');
+                const userCanteens = canteens.filter(c => (c.is_active !== false && c.is_active !== 0) || String(c.canteen_id) === String(u.managed_canteen_id));
+                const canteenOptions = '<option value="">Choose for manager</option>' + userCanteens.map(c =>
+                    `<option value="${c.canteen_id}" ${String(c.canteen_id) === String(u.managed_canteen_id) ? 'selected' : ''}>${esc(c.name)}</option>`
                 ).join('');
                 return '<tr>' +
                     '<td><strong>' + esc(u.name) + '</strong></td>' +
@@ -996,6 +1019,7 @@
                     '<td>' + esc(u.phone || '—') + '</td>' +
                     '<td>' + esc(u.hostel || '—') + '</td>' +
                     '<td><select id="user-role-' + u.user_id + '" name="user_role_' + u.user_id + '" class="status-select" data-user-id="' + u.user_id + '" onchange="adminUpdateUserRole(this)">' + options + '</select></td>' +
+                    '<td><select id="user-canteen-' + u.user_id + '" name="user_canteen_' + u.user_id + '" class="status-select" data-user-id="' + u.user_id + '" onchange="adminUpdateUserCanteen(this)">' + canteenOptions + '</select></td>' +
                     '</tr>';
             }).join('');
         }
@@ -1003,9 +1027,16 @@
         async function adminUpdateUserRole(selectEl) {
             const userId = selectEl.dataset.userId;
             const newRole = selectEl.value;
+            const canteenSelect = document.getElementById('user-canteen-' + userId);
+            const managedCanteenId = newRole === 'canteen_manager' && canteenSelect ? canteenSelect.value : null;
+            if (newRole === 'canteen_manager' && !managedCanteenId) {
+                alert('Choose which canteen this manager will manage.');
+                await loadAdminDashboard();
+                return;
+            }
             try {
                 if (typeof updateUser === 'function') {
-                    await updateUser(userId, { role: newRole });
+                    await updateUser(userId, { role: newRole, managed_canteen_id: managedCanteenId });
                 }
             } catch (err) {
                 alert('Could not update user role: ' + (err.message || 'Please try again.'));
@@ -1013,6 +1044,24 @@
             }
         }
         window.adminUpdateUserRole = adminUpdateUserRole;
+
+        async function adminUpdateUserCanteen(selectEl) {
+            const userId = selectEl.dataset.userId;
+            const roleSelect = document.getElementById('user-role-' + userId);
+            if (!roleSelect || roleSelect.value !== 'canteen_manager') return;
+            if (!selectEl.value) {
+                alert('A canteen manager must be assigned to a canteen.');
+                await loadAdminDashboard();
+                return;
+            }
+            try {
+                await updateUser(userId, { role: 'canteen_manager', managed_canteen_id: selectEl.value });
+            } catch (err) {
+                alert('Could not change the manager assignment: ' + (err.message || 'Please try again.'));
+                await loadAdminDashboard();
+            }
+        }
+        window.adminUpdateUserCanteen = adminUpdateUserCanteen;
     </script>
 
 </body>

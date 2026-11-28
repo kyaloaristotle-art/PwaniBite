@@ -68,6 +68,12 @@
                 </li>
 
                 <li>
+                    <a href="canteens.html">
+                        🏪 Canteens
+                    </a>
+                </li>
+
+                <li>
                     <a href="delivery-portal.html">
                         🚚 Delivery
                     </a>
@@ -200,6 +206,16 @@
 
                     <div class="form-group">
 
+                        <label for="menu-canteen">Canteen</label>
+
+                        <select id="menu-canteen" name="canteen" required>
+                            <option value="">Loading canteens…</option>
+                        </select>
+
+                    </div>
+
+                    <div class="form-group">
+
                         <label for="menu-category">Category</label>
 
                         <select id="menu-category" name="category" required>
@@ -266,6 +282,29 @@
     <script src="script.js"></script>
     <script>
         let currentLoadedItems = [];
+        let loadedCanteens = [];
+
+        async function loadCanteenOptions() {
+            const select = document.getElementById('menu-canteen');
+            const managerMode = typeof isCanteenManager === 'function' && isCanteenManager();
+            const currentUser = typeof getCurrentUserFromStorage === 'function' ? getCurrentUserFromStorage() : {};
+            try {
+                if (typeof getCanteens === 'function') {
+                    const res = await getCanteens();
+                    loadedCanteens = (res && res.canteens) || [];
+                }
+            } catch (err) {
+                console.warn('Could not load canteens:', err.message);
+            }
+            if (managerMode) {
+                loadedCanteens = loadedCanteens.filter(c => String(c.canteen_id) === String(currentUser.managed_canteen_id));
+                select.disabled = true;
+            }
+            select.innerHTML = loadedCanteens.length
+                ? loadedCanteens.map(c => `<option value="${c.canteen_id}">${escapeHtml(c.name)}</option>`).join('')
+                : '<option value="">No canteens available</option>';
+            if (managerMode && loadedCanteens.length) select.value = String(currentUser.managed_canteen_id);
+        }
         const defaultMenuImages = {
             'tamarind juice': 'Images/Tamarind Juice.jpg',
             'passion juice': 'Images/Passion Juice.jpg',
@@ -285,8 +324,8 @@
             'boiled eggs': 'Images/boiled-egg.jpg',
             'chai rangi': 'Images/Chai Rangi.jpg',
             'chapati & beans offer': 'Images/Chapati Beans Offer.jpg',
-            'ugali & omena': 'Images/Ugali & Omena.jpg',
-            'ugali & mayai': 'Images/Ugali & Mayai.jpg',
+            'ugali & omena': 'Images/Ugali Omena.jpg',
+            'ugali & mayai': 'Images/Ugali mayai.jpg',
             'rice & beans': 'Images/Rice and Beans.jpg',
             'smokie': 'Images/Smokie.jpg',
             'kahawa': 'Images/Kahawa.jpg',
@@ -308,13 +347,32 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function() {
-            if (typeof isAuthenticated === 'function' && typeof isAdmin === 'function') {
-                if (!isAuthenticated() || !isAdmin()) {
-                    alert('Access restricted: Administrator privileges required.');
-                    window.location.href = 'login.html';
-                    return;
-                }
+            const managerMode = typeof isCanteenManager === 'function' && isCanteenManager();
+            const adminMode = typeof isAdmin === 'function' && isAdmin();
+            if (typeof isAuthenticated === 'function' && (!isAuthenticated() || (!adminMode && !managerMode))) {
+                alert('Access restricted: Canteen management privileges required.');
+                window.location.href = 'login.html';
+                return;
             }
+            if (managerMode) {
+                const user = getCurrentUserFromStorage();
+                const brand = document.querySelector('.admin-logo small');
+                const managerName = document.querySelector('.admin-user strong');
+                const managerRole = document.querySelector('.admin-user small');
+                const heading = document.querySelector('.dashboard-header h1');
+                const description = document.querySelector('.dashboard-header p');
+                if (brand) brand.textContent = 'Canteen Management';
+                if (managerName) managerName.textContent = user.name || 'Canteen Manager';
+                if (managerRole) managerRole.textContent = 'Canteen Manager';
+                if (heading) heading.textContent = 'Your Canteen Menu';
+                if (description) description.textContent = 'Manage menu items for your assigned canteen';
+                document.querySelectorAll('.sidebar a[href="admin.html"], .sidebar a[href="canteens.html"], .sidebar a[href="delivery-portal.html"]').forEach(link => {
+                    if (link.parentElement) link.parentElement.hidden = true;
+                });
+                const ordersLink = document.querySelector('.sidebar a[href="#orders"]');
+                if (ordersLink) ordersLink.href = 'canteen-manager.html';
+            }
+            await loadCanteenOptions();
             await loadMenuItems();
             initializeMenuForm();
         });
@@ -357,6 +415,7 @@
                             <p>${esc(item.description || '')}</p>
                             <p><strong>Price:</strong> KSh ${price}</p>
                             <p><strong>Category:</strong> ${esc(item.category || 'General')}</p>
+                            <p><strong>Canteen:</strong> ${esc(item.canteen || 'Unassigned')}</p>
                             <p><strong>Stock:</strong> ${Number(item.stock_quantity || 0)} portions</p>
                             <p><strong>Status:</strong> <span class="${isAvailable ? 'available' : 'unavailable'}">${isAvailable ? 'Available' : 'Unavailable'}</span></p>
                         </div>
@@ -382,6 +441,7 @@
                 const imageInput = document.getElementById('menu-image');
                 let image = itemId ? ((currentLoadedItems.find(i => String(i.food_id || i.id) === String(itemId)) || {}).image || '') : '';
                 const category = document.getElementById('menu-category').value;
+                const canteenId = document.getElementById('menu-canteen').value;
                 const available = document.getElementById('menu-available').checked;
                 const stock = parseInt(document.getElementById('menu-stock').value, 10);
 
@@ -398,6 +458,7 @@
                     price: price,
                     image: image,
                     category: category,
+                    canteen_id: canteenId ? parseInt(canteenId, 10) : null,
                     availability: available
                 };
 
@@ -468,6 +529,14 @@
                     categorySelect.appendChild(option);
                 }
                 categorySelect.value = itemCategory;
+                const canteenSelect = document.getElementById('menu-canteen');
+                if (item.canteen_id != null && ![...canteenSelect.options].some(o => String(o.value) === String(item.canteen_id))) {
+                    const option = document.createElement('option');
+                    option.value = item.canteen_id;
+                    option.textContent = item.canteen || `Canteen ${item.canteen_id}`;
+                    canteenSelect.appendChild(option);
+                }
+                canteenSelect.value = item.canteen_id != null ? String(item.canteen_id) : '';
                 document.getElementById('menu-available').checked = item.availability !== false && item.availability !== 0;
                 document.getElementById('menu-modal').style.display = 'flex';
             }

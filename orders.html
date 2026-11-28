@@ -83,7 +83,7 @@
         </p>
 
         <p>
-            Order Food • Hostel Delivery • Happy Comrades
+            Order Food • Campus Delivery • Happy Comrades
         </p>
 
     </footer>
@@ -157,7 +157,8 @@
                             </div>
                             <div class="order-details">
                                 <p><strong>Date:</strong> ${date} at ${time}</p>
-                                <p><strong>Delivery Location:</strong> ${escapeHtml(order.hostel || '')}, ${escapeHtml(order.block || '')}, Room ${escapeHtml(order.room || '')}</p>
+                                ${order.canteen ? `<p><strong>Canteen:</strong> ${escapeHtml(order.canteen)}</p>` : ''}
+                                <p><strong>Delivery Location:</strong> ${escapeHtml(order.delivery_location || [order.hostel, order.block, order.room ? 'Room ' + order.room : ''].filter(Boolean).join(', ') || 'Campus location not provided')}</p>
                                 <p><strong>Items:</strong></p>
                                 ${itemsHtml || '<p>Standard items</p>'}
                                 <p><strong>Total:</strong> KSh ${order.total_amount}</p>
@@ -277,9 +278,9 @@
             // Estimate delivery message
             let estimateMsg = '⏱️ Preparing your meal fresh in the canteen';
             if (rawStatus === 'Out for Delivery') {
-                estimateMsg = '🛵 Courier is on the way to your hostel room!';
+                estimateMsg = '🛵 Courier is on the way to your campus meeting point!';
             } else if (rawStatus === 'Delivered') {
-                estimateMsg = '✅ Order successfully delivered to your room. Enjoy your meal!';
+                estimateMsg = '✅ Order delivered to your campus meeting point. Enjoy your meal!';
             } else if (isCancelled) {
                 estimateMsg = 'This order has been cancelled.';
             }
@@ -307,7 +308,8 @@
                 </div>
 
                 <div class="order-info">
-                    <p><strong>Destination:</strong> ${escapeHtml(order.hostel || '')}, ${escapeHtml(order.block || '')}, Room ${escapeHtml(order.room || '')}</p>
+                    ${order.canteen ? `<p><strong>Canteen:</strong> ${escapeHtml(order.canteen)}</p>` : ''}
+                    <p><strong>Destination:</strong> ${escapeHtml(order.delivery_location || [order.hostel, order.block, order.room ? 'Room ' + order.room : ''].filter(Boolean).join(', ') || 'Campus location not provided')}</p>
                     <p><strong>Delivery Window:</strong> ${escapeHtml(order.delivery_time || 'Standard (30-45 mins)')}</p>
                     <p><strong>Total Paid:</strong> KSh ${order.total_amount}</p>
                     ${order.special_instructions ? `<p><strong>Note:</strong> ${escapeHtml(order.special_instructions)}</p>` : ''}

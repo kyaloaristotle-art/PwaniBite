@@ -39,6 +39,8 @@ urlpatterns += [path("profile/addresses/<int:address_id>", views.profile_address
 urlpatterns += dual("users/delivery/list", views.delivery_users, "delivery-users")
 urlpatterns += dual("users", views.users_list, "users-list")
 urlpatterns += dual("users/<int:user_id>", views.user_detail, "user-detail")
+urlpatterns += dual("canteens", views.canteens_collection, "canteens-list")
+urlpatterns += [path("canteens/<int:canteen_id>", views.canteen_detail, name="canteen-detail")]
 urlpatterns += dual("food/categories/list", views.food_categories, "food-categories")
 urlpatterns += dual("food/upload-image", views.food_image_upload, "food-upload-image")
 urlpatterns += dual("food", views.food_collection, "food-list")
