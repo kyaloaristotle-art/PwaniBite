@@ -50,9 +50,35 @@ Admins can list submissions with `GET /api/contact`.
 
 ## Authentication
 
+- The web forms are available at `/login` and `/signup` (also `login.html` and `register.html`).
 - `POST /api/auth/register` creates customer accounts.
 - `POST /api/auth/login` verifies bcrypt passwords and issues a 7 day HS256 JWT.
+- `GET /api/auth/google/config` returns the public Google Web client ID used by the sign-in buttons.
+- `POST /api/auth/google` verifies Google's signed ID token, then creates or signs in the linked customer account.
 - `GET /api/auth/me` checks the current bearer token.
 - Admin and delivery permissions are enforced using the role stored in the database.
+
+### Enable Google sign-in
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create or select a project and configure Google Auth Platform branding and audience. The app only requests the standard `openid`, `email`, and `profile` identity claims. While the app is in testing mode, add your Google account under the Audience page's test users.
+2. Under Google Auth Platform > Clients, create an OAuth client with application type **Web application**.
+3. Add the exact site origin under **Authorized JavaScript origins**. For local development, add `http://localhost:8000` (and any other origin and port used to open the app). For a deployed site, add its HTTPS origin. This popup flow does not use an authorized redirect URI.
+4. Copy the client ID ending in `.apps.googleusercontent.com` into `GOOGLE_OAUTH_CLIENT_ID` in `backend/.env`. Do not put a client secret in the frontend or this setting.
+5. Apply `backend/database/migrations/2026-11-25-google-oauth.sql` once to the existing `pwani_bite` database. It makes phone/password optional for Google-only users and creates the provider-link table. For a new database, use the updated `backend/database/schema.sql` instead.
+6. Install the backend dependencies and restart Django:
+
+   ```powershell
+   cd backend
+   python -m pip install -r django_api\requirements.txt
+   python django_api\manage.py runserver 127.0.0.1:8000
+   ```
+
+The login and registration pages render Google's official button once the API reports a client ID. Google ID tokens are verified on the server for signature, audience, expiry, issuer, and the page's one-time nonce. Google account IDs (`sub`) are stored in `user_oauth_accounts`; a verified Gmail or Workspace address can link to an existing account with the same email. Other existing email accounts must first sign in with their password. Google-only users enter their phone number in the order form when placing their first order.
+
+Google documents the [Web client ID and origin setup](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid) and [server-side ID-token verification](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token).
+
+### Customer profiles
+
+The signed-in customer profile is available at `/profile`. It reads the customer's order history from `GET /api/orders/my-orders`; profile details, avatar uploads, favorites, saved addresses, and password changes use authenticated `/api/auth/...` and `/api/profile/...` endpoints. Apply `backend/database/migrations/2026-11-26-profile-features.sql` after the Google OAuth migration to add avatar, favorites, and address storage to an existing database.
 
 All existing food, order, payment, delivery, feedback, report, and M-Pesa paths are retained for the current frontend. Set `DJANGO_DEBUG=false`, a strong `DJANGO_SECRET_KEY`/`JWT_SECRET`, correct `DJANGO_ALLOWED_HOSTS`, and a reachable HTTPS `SERVER_URL` before deployment. The Django development server is for local use; use a production WSGI/ASGI server for deployment.

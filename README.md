@@ -42,11 +42,6 @@ The API reads `backend/.env`. Keep its secrets private. Before deployment, confi
 
 ## Default local admin
 
-If you initialize a fresh database with the existing schema script, it creates:
-
-- Email: `admin@pwanibite.com`
-- Password: `password123`
-
-Change this account password before exposing the application beyond local development.
+If you initialize a fresh database with `npm run init-db`, it creates the admin account `admin@pwanibite.com` with a **randomly generated password printed once** in the console. Save it when you see it — it is not stored anywhere in plaintext. Change the password before exposing the application beyond local development.
 
 More setup details are in [backend/README.md](backend/README.md) and [backend/django_api/README.md](backend/django_api/README.md).

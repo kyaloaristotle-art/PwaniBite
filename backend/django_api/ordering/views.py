@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.contrib.auth.hashers import check_password
-from django.db import IntegrityError, transaction
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Avg, Count, F, Q, Sum, ExpressionWrapper, DurationField
 from django.db.models.functions import TruncDate, ExtractHour
 from django.utils import timezone
@@ -17,7 +17,7 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import ContactMessage, Delivery, Feedback, Food, Order, OrderItem, Payment, User
+from .models import ContactMessage, Delivery, Feedback, Food, Order, OrderItem, Payment, User, UserAddress, UserFavorite, UserOAuthAccount
 from .permissions import IsAdmin, IsAdminOrDelivery, IsCustomer
 from .tokens import issue_token
 from .throttles import AuthAttemptThrottle
@@ -27,12 +27,61 @@ def public_user(user):
     return {
         "user_id": user.user_id, "name": user.name, "email": user.email,
         "phone": user.phone, "hostel": user.hostel, "block": user.block,
-        "room": user.room, "role": user.role,
+        "room": user.room, "avatar_url": user.avatar_url, "role": user.role,
     }
 
 
 def error(error_message, code=status.HTTP_400_BAD_REQUEST, **extra):
     return Response({"error": error_message, **extra}, status=code)
+
+
+def normalize_kenyan_phone(value):
+    phone = re.sub(r"[\s()-]", "", str(value or ""))
+    if not phone:
+        return None
+    if phone.startswith("+"):
+        phone = phone[1:]
+    if phone.startswith("254") and len(phone) == 12:
+        phone = "0" + phone[3:]
+    if not re.fullmatch(r"(?:07|01)\d{8}", phone):
+        raise ValueError("Enter a valid Kenyan phone number")
+    return phone
+
+
+def serialize_address(address):
+    return {
+        "address_id": address.address_id,
+        "label": address.label,
+        "delivery_location": address.delivery_location,
+        "hostel": address.hostel,
+        "block": address.block,
+        "room": address.room,
+        "is_default": address.is_default,
+    }
+
+
+def parse_address_payload(body, current=None):
+    def value(key):
+        raw = body.get(key, getattr(current, key, "") if current else "")
+        return str(raw or "").strip()
+
+    label = value("label")
+    location = value("delivery_location")
+    if not label or len(label) > 60:
+        raise ValueError("Enter an address label of up to 60 characters")
+    if not location or len(location) > 255:
+        raise ValueError("Enter a delivery point of up to 255 characters")
+    fields = {"label": label, "delivery_location": location}
+    for key, limit in (("hostel", 50), ("block", 50), ("room", 20)):
+        item = value(key)
+        if len(item) > limit:
+            raise ValueError(f"{key.title()} must be {limit} characters or fewer")
+        fields[key] = item or None
+    default_value = body.get("is_default", current.is_default if current else False)
+    if isinstance(default_value, str):
+        default_value = default_value.lower() in ("true", "1", "yes", "on")
+    fields["is_default"] = bool(default_value)
+    return fields
 
 
 def serialize_food(food):
@@ -118,6 +167,8 @@ def hash_password(raw_password):
 
 
 def verify_password(raw_password, encoded_password):
+    if not encoded_password:
+        return False
     if encoded_password.startswith(("$2a$", "$2b$", "$2y$")):
         try:
             import bcrypt
@@ -136,18 +187,21 @@ def register(request):
     email = str(body.get("email", "")).strip().lower()
     phone = str(body.get("phone", "")).strip()
     password = str(body.get("password", ""))
-    if len(name) < 2:
-        return error("Name must be at least 2 characters")
-    if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+    confirm_password = str(body.get("confirm_password", password))
+    if not 2 <= len(name) <= 100:
+        return error("Name must be between 2 and 100 characters")
+    if len(email) > 100 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
         return error("Valid email required")
-    if not re.fullmatch(r"(?:07|01)\d{8}", phone):
+    if phone and not re.fullmatch(r"(?:07|01)\d{8}", phone):
         return error("Invalid Kenyan phone number")
     if len(password) < 6:
         return error("Password must be at least 6 characters")
-    if User.objects.filter(Q(email=email) | Q(phone=phone)).exists():
-        return error("A user with this email or phone number already exists", status.HTTP_409_CONFLICT)
+    if confirm_password != password:
+        return error("The passwords do not match")
+    if User.objects.filter(email=email).exists() or (phone and User.objects.filter(phone=phone).exists()):
+        return error("An account with this email or phone number already exists", status.HTTP_409_CONFLICT)
     user = User(
-        name=name, email=email, phone=phone, password=hash_password(password), role="customer",
+        name=name, email=email, phone=phone or None, password=hash_password(password), role="customer",
         hostel=str(body.get("hostel", "")).strip() or None,
         block=str(body.get("block", "")).strip() or None,
         room=str(body.get("room", "")).strip() or None,
@@ -163,20 +217,242 @@ def register(request):
 @permission_classes([AllowAny])
 @throttle_classes([AuthAttemptThrottle])
 def login(request):
-    email = str(request.data.get("email", "")).strip().lower()
+    identifier = str(request.data.get("identifier", request.data.get("email", ""))).strip().lower()
     password = str(request.data.get("password", ""))
-    if not email or not password:
-        return error("Valid email and password required")
-    user = User.objects.filter(email=email).first()
+    if not identifier or not password:
+        return error("Email or phone number and password are required")
+    if "@" in identifier:
+        user = User.objects.filter(email=identifier).first()
+    else:
+        phone = re.sub(r"[\s()-]", "", identifier)
+        if phone.startswith("+"):
+            phone = phone[1:]
+        if phone.startswith("254") and len(phone) == 12:
+            phone = "0" + phone[3:]
+        if not re.fullmatch(r"(?:07|01)\d{8}", phone):
+            return error("Enter a valid email or Kenyan phone number")
+        user = User.objects.filter(phone=phone).first()
     if not user or not verify_password(password, user.password):
         return error("Invalid email or password", status.HTTP_401_UNAUTHORIZED)
     return Response({"message": "Login successful", "token": issue_token(user), "user": public_user(user)})
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
+def google_auth_config(request):
+    return Response({"configured": bool(settings.GOOGLE_OAUTH_CLIENT_ID), "client_id": settings.GOOGLE_OAUTH_CLIENT_ID})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@throttle_classes([AuthAttemptThrottle])
+def google_login(request):
+    client_id = settings.GOOGLE_OAUTH_CLIENT_ID
+    credential = str(request.data.get("credential", ""))
+    nonce = str(request.data.get("nonce", ""))
+    if not client_id:
+        return error("Google sign-in is not configured yet", status.HTTP_503_SERVICE_UNAVAILABLE)
+    if not credential or not nonce:
+        return error("Google sign-in could not be verified")
+
+    try:
+        from google.auth.transport.requests import Request as GoogleRequest
+        from google.oauth2 import id_token
+        claims = id_token.verify_oauth2_token(credential, GoogleRequest(), audience=client_id)
+    except Exception:
+        # An invalid token must never reach account lookup or creation.
+        return error("Google sign-in could not be verified", status.HTTP_401_UNAUTHORIZED)
+
+    if claims.get("nonce") != nonce:
+        return error("Google sign-in expired. Please try again.", status.HTTP_401_UNAUTHORIZED)
+    email = str(claims.get("email", "")).strip().lower()
+    subject = str(claims.get("sub", "")).strip()
+    if not email or not subject or claims.get("email_verified") is not True:
+        return error("Google did not provide a verified email address", status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        with transaction.atomic():
+            oauth_account = UserOAuthAccount.objects.select_related("user").filter(
+                provider="google", provider_user_id=subject
+            ).first()
+            if oauth_account:
+                user = oauth_account.user
+            else:
+                user = User.objects.filter(email=email).first()
+                if user:
+                    # Auto-link only when Google is authoritative for this email.
+                    google_controls_email = email.endswith("@gmail.com") or bool(claims.get("hd"))
+                    if not google_controls_email:
+                        return error("This email already has an account. Sign in with your password first.", status.HTTP_409_CONFLICT)
+                else:
+                    display_name = str(claims.get("name") or email.split("@", 1)[0]).strip()[:100]
+                    user = User.objects.create(
+                        name=display_name or "PwaniBite customer", email=email,
+                        phone=None, password=None, role="customer",
+                    )
+                UserOAuthAccount.objects.create(user=user, provider="google", provider_user_id=subject)
+    except IntegrityError:
+        # A simultaneous callback can race with another request; recover the account link.
+        oauth_account = UserOAuthAccount.objects.select_related("user").filter(
+            provider="google", provider_user_id=subject
+        ).first()
+        if not oauth_account:
+            return error("Could not finish Google sign-in. Please try again.", status.HTTP_409_CONFLICT)
+        user = oauth_account.user
+    except DatabaseError:
+        return error("Google sign-in database setup is incomplete. Apply the Google sign-in migration and try again.", status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    return Response({"message": "Google sign-in successful", "token": issue_token(user), "user": public_user(user)})
+
+
+@api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def current_user(request):
-    return Response({"user": public_user(request.user) | {"created_at": request.user.created_at}})
+    if request.method == "PATCH":
+        body = request.data
+        if "name" in body:
+            name = str(body.get("name", "")).strip()
+            if not 2 <= len(name) <= 100:
+                return error("Name must be between 2 and 100 characters")
+            request.user.name = name
+        if "phone" in body:
+            try:
+                phone = normalize_kenyan_phone(body.get("phone"))
+            except ValueError as exc:
+                return error(str(exc))
+            duplicate = User.objects.filter(phone=phone).exclude(user_id=request.user.user_id).exists() if phone else False
+            if duplicate:
+                return error("That phone number is already linked to another account", status.HTTP_409_CONFLICT)
+            request.user.phone = phone
+        request.user.save()
+    return Response({"user": public_user(request.user) | {
+        "created_at": request.user.created_at,
+        "has_password": bool(request.user.password),
+    }})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    current_password = str(request.data.get("current_password", ""))
+    new_password = str(request.data.get("new_password", ""))
+    confirm_password = str(request.data.get("confirm_password", ""))
+    if request.user.password and not verify_password(current_password, request.user.password):
+        return error("Your current password is incorrect", status.HTTP_400_BAD_REQUEST)
+    if len(new_password) < 6:
+        return error("New password must be at least 6 characters")
+    if new_password != confirm_password:
+        return error("The new passwords do not match")
+    request.user.password = hash_password(new_password)
+    request.user.save(update_fields=["password", "updated_at"])
+    return Response({"message": "Password updated successfully"})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def profile_avatar_upload(request):
+    uploaded = request.FILES.get("image")
+    if not uploaded:
+        return error("Choose a profile image")
+    if uploaded.size > 5 * 1024 * 1024:
+        return error("Choose an image no larger than 5 MB")
+    header = uploaded.read(12)
+    uploaded.seek(0)
+    signatures = (
+        (header.startswith(b"\xff\xd8\xff"), ".jpg"),
+        (header.startswith(b"\x89PNG\r\n\x1a\n"), ".png"),
+        (header.startswith((b"GIF87a", b"GIF89a")), ".gif"),
+        (len(header) >= 12 and header[:4] == b"RIFF" and header[8:12] == b"WEBP", ".webp"),
+    )
+    extension = next((ext for valid, ext in signatures if valid), None)
+    if not extension:
+        return error("Use a valid JPG, PNG, WebP, or GIF image")
+    relative_path = f"Images/uploads/avatars/{secrets.token_hex(16)}{extension}"
+    target = settings.FRONTEND_ROOT / relative_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(uploaded.read())
+    request.user.avatar_url = relative_path.replace("\\", "/")
+    request.user.save(update_fields=["avatar_url", "updated_at"])
+    return Response({"avatar_url": request.user.avatar_url})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsCustomer])
+def profile_favorites(request):
+    if request.method == "GET":
+        favorites = UserFavorite.objects.filter(user_id=request.user.user_id).select_related("food").order_by("-created_at")
+        return Response({"favorites": [
+            {"favorite_id": favorite.favorite_id, "food_id": favorite.food_id, "food": serialize_food(favorite.food)}
+            for favorite in favorites
+        ]})
+    try:
+        food_id = int(request.data.get("food_id"))
+    except (TypeError, ValueError):
+        return error("Choose a valid food item")
+    food = Food.objects.filter(food_id=food_id).first()
+    if not food:
+        return error("Food item not found", status.HTTP_404_NOT_FOUND)
+    favorite, created = UserFavorite.objects.get_or_create(user=request.user, food=food)
+    return Response({"favorite_id": favorite.favorite_id, "food_id": food.food_id, "created": created}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsCustomer])
+def profile_favorite_detail(request, food_id):
+    deleted, _ = UserFavorite.objects.filter(user=request.user, food_id=food_id).delete()
+    if not deleted:
+        return error("Favorite not found", status.HTTP_404_NOT_FOUND)
+    return Response({"message": "Favorite removed"})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def profile_addresses(request):
+    if request.method == "GET":
+        addresses = UserAddress.objects.filter(user=request.user).order_by("-is_default", "label")
+        return Response({"addresses": [serialize_address(address) for address in addresses]})
+    try:
+        fields = parse_address_payload(request.data)
+    except ValueError as exc:
+        return error(str(exc))
+    with transaction.atomic():
+        has_addresses = UserAddress.objects.filter(user=request.user).exists()
+        fields["is_default"] = fields["is_default"] or not has_addresses
+        if fields["is_default"]:
+            UserAddress.objects.filter(user=request.user).update(is_default=False)
+        address = UserAddress.objects.create(user=request.user, **fields)
+    return Response({"address": serialize_address(address)}, status=status.HTTP_201_CREATED)
+
+
+@api_view(["PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
+def profile_address_detail(request, address_id):
+    address = UserAddress.objects.filter(address_id=address_id, user=request.user).first()
+    if not address:
+        return error("Address not found", status.HTTP_404_NOT_FOUND)
+    if request.method == "DELETE":
+        was_default = address.is_default
+        address.delete()
+        if was_default:
+            next_address = UserAddress.objects.filter(user=request.user).order_by("address_id").first()
+            if next_address:
+                next_address.is_default = True
+                next_address.save(update_fields=["is_default", "updated_at"])
+        return Response({"message": "Address removed"})
+    try:
+        fields = parse_address_payload(request.data, address)
+    except ValueError as exc:
+        return error(str(exc))
+    with transaction.atomic():
+        if fields["is_default"]:
+            UserAddress.objects.filter(user=request.user).exclude(address_id=address_id).update(is_default=False)
+        for field, value in fields.items():
+            setattr(address, field, value)
+        address.save()
+        if not address.is_default and not UserAddress.objects.filter(user=request.user, is_default=True).exists():
+            address.is_default = True
+            address.save(update_fields=["is_default", "updated_at"])
+    return Response({"address": serialize_address(address)})
 
 
 @api_view(["GET"])

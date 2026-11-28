@@ -8,7 +8,19 @@ const API_BASE_URL = window.PWANI_BITE_API_URL ||
     (useLocalApi ? 'http://localhost:8000/api' : `${window.location.origin}/api`);
 
 // Store JWT token
-let token = localStorage.getItem('pwaniBiteToken') || null;
+let token = localStorage.getItem('pwaniBiteToken') || sessionStorage.getItem('pwaniBiteToken') || null;
+
+function storeAuthSession(authToken, user, rememberMe = true) {
+    localStorage.removeItem('pwaniBiteToken');
+    localStorage.removeItem('pwaniBiteCurrentUser');
+    sessionStorage.removeItem('pwaniBiteToken');
+    sessionStorage.removeItem('pwaniBiteCurrentUser');
+
+    const storage = rememberMe ? localStorage : sessionStorage;
+    token = authToken;
+    storage.setItem('pwaniBiteToken', authToken);
+    storage.setItem('pwaniBiteCurrentUser', JSON.stringify(user));
+}
 
 // Helper function to get headers
 function getHeaders() {
@@ -74,32 +86,113 @@ async function register(userData) {
 
     // Store token if registration successful
     if (data.token) {
-        token = data.token;
-        localStorage.setItem('pwaniBiteToken', token);
-        localStorage.setItem('pwaniBiteCurrentUser', JSON.stringify(data.user));
+        storeAuthSession(data.token, data.user, true);
     }
 
     return data;
 }
 
 // Login user
-async function login(email, password) {
+async function login(identifier, password, rememberMe = true) {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ identifier, email: identifier, password })
     });
 
     const data = await handleResponse(response);
 
     // Store token if login successful
     if (data.token) {
-        token = data.token;
-        localStorage.setItem('pwaniBiteToken', token);
-        localStorage.setItem('pwaniBiteCurrentUser', JSON.stringify(data.user));
+        storeAuthSession(data.token, data.user, rememberMe);
     }
 
     return data;
+}
+
+async function getGoogleAuthConfig() {
+    const response = await fetch(`${API_BASE_URL}/auth/google/config`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+    return await handleResponse(response);
+}
+
+async function googleSignIn(credential, nonce, rememberMe = true) {
+    const response = await fetch(`${API_BASE_URL}/auth/google`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ credential, nonce })
+    });
+    const data = await handleResponse(response);
+    if (data.token) storeAuthSession(data.token, data.user, rememberMe);
+    return data;
+}
+
+async function updateProfile(profileData) {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify(profileData)
+    });
+    const data = await handleResponse(response);
+    if (data.user) {
+        const storage = localStorage.getItem('pwaniBiteToken') ? localStorage : sessionStorage;
+        storage.setItem('pwaniBiteCurrentUser', JSON.stringify(data.user));
+    }
+    return data;
+}
+
+async function uploadProfileAvatar(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    const headers = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const response = await fetch(`${API_BASE_URL}/profile/avatar`, {
+        method: 'POST', headers, body: formData
+    });
+    return await handleResponse(response);
+}
+
+async function changePassword(passwordData) {
+    const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+        method: 'POST', headers: getHeaders(), body: JSON.stringify(passwordData)
+    });
+    return await handleResponse(response);
+}
+
+async function getMyFavorites() {
+    const response = await fetch(`${API_BASE_URL}/profile/favorites`, { method: 'GET', headers: getHeaders() });
+    return await handleResponse(response);
+}
+
+async function addMyFavorite(foodId) {
+    const response = await fetch(`${API_BASE_URL}/profile/favorites`, {
+        method: 'POST', headers: getHeaders(), body: JSON.stringify({ food_id: foodId })
+    });
+    return await handleResponse(response);
+}
+
+async function removeMyFavorite(foodId) {
+    const response = await fetch(`${API_BASE_URL}/profile/favorites/${foodId}`, { method: 'DELETE', headers: getHeaders() });
+    return await handleResponse(response);
+}
+
+async function getMyAddresses() {
+    const response = await fetch(`${API_BASE_URL}/profile/addresses`, { method: 'GET', headers: getHeaders() });
+    return await handleResponse(response);
+}
+
+async function saveMyAddress(address, addressId = null) {
+    const response = await fetch(`${API_BASE_URL}/profile/addresses${addressId ? `/${addressId}` : ''}`, {
+        method: addressId ? 'PATCH' : 'POST', headers: getHeaders(), body: JSON.stringify(address)
+    });
+    return await handleResponse(response);
+}
+
+async function deleteMyAddress(addressId) {
+    const response = await fetch(`${API_BASE_URL}/profile/addresses/${addressId}`, { method: 'DELETE', headers: getHeaders() });
+    return await handleResponse(response);
 }
 
 // Logout user
@@ -107,6 +200,8 @@ function logout() {
     token = null;
     localStorage.removeItem('pwaniBiteToken');
     localStorage.removeItem('pwaniBiteCurrentUser');
+    sessionStorage.removeItem('pwaniBiteToken');
+    sessionStorage.removeItem('pwaniBiteCurrentUser');
 }
 
 // Get current user
@@ -559,25 +654,25 @@ function isAuthenticated() {
 
 // Check if user is admin
 function isAdmin() {
-    const user = JSON.parse(localStorage.getItem('pwaniBiteCurrentUser') || '{}');
+    const user = getCurrentUserFromStorage();
     return user.role === 'admin';
 }
 
 // Check if user is customer
 function isCustomer() {
-    const user = JSON.parse(localStorage.getItem('pwaniBiteCurrentUser') || '{}');
+    const user = getCurrentUserFromStorage();
     return user.role === 'customer';
 }
 
 // Check if user is delivery personnel
 function isDelivery() {
-    const user = JSON.parse(localStorage.getItem('pwaniBiteCurrentUser') || '{}');
+    const user = getCurrentUserFromStorage();
     return user.role === 'delivery';
 }
 
 // Get current user from localStorage
 function getCurrentUserFromStorage() {
-    return JSON.parse(localStorage.getItem('pwaniBiteCurrentUser') || '{}');
+    return JSON.parse(localStorage.getItem('pwaniBiteCurrentUser') || sessionStorage.getItem('pwaniBiteCurrentUser') || '{}');
 }
 
 // Only allow the known same-site checkout return destination after auth.
@@ -631,6 +726,17 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         register,
         login,
+        getGoogleAuthConfig,
+        googleSignIn,
+        updateProfile,
+        uploadProfileAvatar,
+        changePassword,
+        getMyFavorites,
+        addMyFavorite,
+        removeMyFavorite,
+        getMyAddresses,
+        saveMyAddress,
+        deleteMyAddress,
         logout,
         getCurrentUser,
         getFood,

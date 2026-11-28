@@ -21,7 +21,8 @@ app.use((req, res, next) => {
         /^\/backend/i,
         /^\/\.git/i,
         /^\/\.vscode/i,
-        /package(-lock)?\.json$/i
+        /package(-lock)?\.json$/i,
+        /\.(md|sql|ps1|sh|ya?ml|toml|ini|log)$/i
     ];
     if (forbiddenPatterns.some(pattern => pattern.test(req.path))) {
         return res.status(403).json({ error: 'Access denied' });

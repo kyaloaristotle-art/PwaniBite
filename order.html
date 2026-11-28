@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -77,6 +78,7 @@
                         type="text"
                         id="name"
                         name="name"
+                        autocomplete="name"
                         placeholder="Enter your name"
                         required
                         aria-required="true"
@@ -97,6 +99,7 @@
                         type="tel"
                         id="phone"
                         name="phone"
+                        autocomplete="tel"
                         placeholder="e.g. 0712 345 678"
                         required
                         aria-required="true"
@@ -121,7 +124,7 @@
                         Select Hostel
                     </label>
 
-                    <select id="hostel" name="hostel" required aria-required="true" aria-describedby="hostel-help">
+                    <select id="hostel" name="hostel" autocomplete="off" required aria-required="true" aria-describedby="hostel-help">
 
                         <option value="">
                             -- Select Hostel --
@@ -159,7 +162,7 @@
                         Block
                     </label>
 
-                    <select id="block" name="block" required aria-required="true" aria-describedby="block-help">
+                    <select id="block" name="block" autocomplete="off" required aria-required="true" aria-describedby="block-help">
 
                         <option value="">
                             -- Select Block --
@@ -340,6 +343,7 @@
                         type="tel"
                         id="mpesa-phone"
                         name="mpesa-phone"
+                        autocomplete="tel"
                         placeholder="e.g. 0712 345 678"
                     >
                     <small id="mpesa-help" style="color: #666; display: block; margin-top: 5px;">We will send an STK prompt to this phone number to complete payment.</small>

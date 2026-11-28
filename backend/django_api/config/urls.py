@@ -31,7 +31,18 @@ def frontend_file(request, path=""):
     return FileResponse(target.open("rb"))
 
 
+def auth_frontend_file(request, file_name):
+    """Serve the public auth and profile pages at their short URLs."""
+    target = settings.FRONTEND_ROOT / file_name
+    if not target.is_file():
+        raise Http404
+    return FileResponse(target.open("rb"))
+
+
 urlpatterns = [
     path("api/", include("ordering.urls")),
+    path("login", auth_frontend_file, {"file_name": "login.html"}),
+    path("signup", auth_frontend_file, {"file_name": "register.html"}),
+    path("profile", auth_frontend_file, {"file_name": "profile.html"}),
     re_path(r"^(?!api/)(?P<path>.*)$", frontend_file),
 ]

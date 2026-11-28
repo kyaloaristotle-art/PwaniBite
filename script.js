@@ -266,6 +266,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Contact Form Validation
     const contactForm = document.querySelector('.contact-form form');
     if (contactForm) {
+        const contactSubject = document.getElementById('subject');
+        const requestedSubject = new URLSearchParams(window.location.search).get('subject');
+        if (contactSubject && requestedSubject && requestedSubject.toLowerCase().includes('password')) {
+            contactSubject.value = 'Password reset help';
+        }
+
         contactForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -714,30 +720,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.removeEventListener('keydown', escHandler);
             }
         });
-
-        // Save order to localStorage for order history
-        saveOrderToHistory({
-            orderNumber: orderNumber,
-            name: orderData.name,
-            phone: orderData.phone,
-            cart: orderData.cart,
-            total: total,
-            hostel: orderData.hostel,
-            block: orderData.block,
-            room: orderData.room,
-            time: orderData.time,
-            message: orderData.message,
-            paymentMethod: paymentMethod,
-            paymentStatus: paymentStatus,
-            status: 'Pending',
-            createdAt: new Date().toISOString()
-        });
-    }
-
-    function saveOrderToHistory(order) {
-        const orders = JSON.parse(localStorage.getItem('pwaniBiteOrders')) || [];
-        orders.push(order);
-        localStorage.setItem('pwaniBiteOrders', JSON.stringify(orders));
     }
 });
 
@@ -989,52 +971,58 @@ function updateAuthUI() {
 
     if (currentUser && currentUser.user_id) {
         // User is logged in - show orders, user info, and logout
-        const ordersLink = document.createElement('li');
-        ordersLink.className = 'auth-link';
-        ordersLink.innerHTML = `
-            <a href="orders.html">My Orders</a>
-        `;
-
         const userLink = document.createElement('li');
-        userLink.className = 'auth-link';
+        userLink.className = 'auth-link profile-menu';
         userLink.innerHTML = `
-            <a href="#" class="user-info" onclick="showUserInfo()">
+            <a href="profile.html" class="user-info">
                 <span>👤</span>
                 <span>${escapeHtml(String(currentUser.name || '').split(' ')[0])}</span>
             </a>
+            <button type="button" class="profile-menu-trigger" aria-expanded="false" aria-controls="profile-menu-panel">
+                <span class="profile-menu-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="profile-menu-panel" id="profile-menu-panel" role="menu" hidden>
+                <a href="profile.html" role="menuitem">My Profile</a>
+                <a href="orders.html" role="menuitem">My Orders</a>
+                ${currentUser.role === 'admin' ? '<a href="admin.html" role="menuitem">Admin Access</a>' : ''}
+                <button type="button" role="menuitem" class="profile-menu-logout" onclick="handleLogout()">Log Out</button>
+            </div>
         `;
-
-        const logoutLink = document.createElement('li');
-        logoutLink.className = 'auth-link';
-        logoutLink.innerHTML = `
-            <a href="#" onclick="handleLogout()">Logout</a>
-        `;
-
-        navLinks.appendChild(ordersLink);
         navLinks.appendChild(userLink);
-        navLinks.appendChild(logoutLink);
 
-        // Add admin link if user is admin
-        if (currentUser.role === 'admin') {
-            const adminLink = document.createElement('li');
-            adminLink.className = 'auth-link';
-            adminLink.innerHTML = `
-                <a href="admin.html">Admin</a>
-            `;
-            navLinks.appendChild(adminLink);
-        }
+        const trigger = userLink.querySelector('.profile-menu-trigger');
+        const panel = userLink.querySelector('.profile-menu-panel');
+        const closeProfileMenu = () => {
+            panel.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+        };
+        trigger.addEventListener('click', () => {
+            const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+            panel.hidden = isOpen;
+            trigger.setAttribute('aria-expanded', String(!isOpen));
+        });
+        userLink.querySelectorAll('.profile-menu-panel a').forEach(link => link.addEventListener('click', closeProfileMenu));
+        document.addEventListener('click', event => {
+            if (!userLink.contains(event.target)) closeProfileMenu();
+        });
+        userLink.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                closeProfileMenu();
+                trigger.focus();
+            }
+        });
     } else {
         // User is not logged in - show login/register
         const loginLink = document.createElement('li');
         loginLink.className = 'auth-link';
         loginLink.innerHTML = `
-            <a href="login.html">Login</a>
+            <a href="login.html">Log In</a>
         `;
 
         const registerLink = document.createElement('li');
         registerLink.className = 'auth-link';
         registerLink.innerHTML = `
-            <a href="register.html">Register</a>
+            <a href="register.html">Sign Up</a>
         `;
 
         navLinks.appendChild(loginLink);
@@ -1055,6 +1043,8 @@ function handleLogout() {
     // Clear local storage
     localStorage.removeItem('pwaniBiteCurrentUser');
     localStorage.removeItem('pwaniBiteToken');
+    sessionStorage.removeItem('pwaniBiteCurrentUser');
+    sessionStorage.removeItem('pwaniBiteToken');
     
     alert('You have been logged out successfully.');
     window.location.href = 'index.html';

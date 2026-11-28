@@ -71,4 +71,5 @@ JWT_SECRET = os.getenv("JWT_SECRET") or SECRET_KEY
 if not DEBUG and JWT_SECRET == "local-only-change-me":
     raise RuntimeError("Set a strong JWT_SECRET before starting outside debug mode")
 JWT_EXPIRE_SECONDS = int(os.getenv("JWT_EXPIRE_SECONDS", str(7 * 24 * 60 * 60)))
+GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "").strip()
 FRONTEND_ROOT = PROJECT_ROOT

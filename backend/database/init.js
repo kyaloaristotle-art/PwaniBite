@@ -1,4 +1,6 @@
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -27,9 +29,18 @@ async function initializeDatabase() {
 
         console.log('✅ Database schema created successfully');
         console.log('📊 Database: pwani_bite');
-        console.log('👤 Default admin user created:');
+
+        // Replace the seeded admin password with a random one so the
+        // well-known 'password123' credential never reaches a real database.
+        const adminPassword = crypto.randomBytes(9).toString('base64url');
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        await connection.query(
+            "UPDATE users SET password = ? WHERE email = 'admin@pwanibite.com'",
+            [hashedPassword]
+        );
+        console.log('👤 Default admin user created (save this password — it is shown only once):');
         console.log('   Email: admin@pwanibite.com');
-        console.log('   Password: password123');
+        console.log(`   Password: ${adminPassword}`);
         console.log('   Role: admin');
 
         await connection.end();

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | PwaniBite</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="api.js"></script>
+</head>
+<body class="profile-page">
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="logo">
+            <img src="Images/Logo.jpg" alt="PwaniBite logo">
+            <span>PwaniBite</span>
+        </div>
+        <ul class="nav-links" role="menubar">
+            <li role="none"><a href="index.html" role="menuitem">Home</a></li>
+            <li role="none"><a href="menu.html" role="menuitem">Menu</a></li>
+            <li role="none"><a href="cart.html" role="menuitem" class="cart-icon-link" aria-label="Shopping cart"><span class="cart-icon-symbol">🛒</span><span class="cart-count">0</span></a></li>
+        </ul>
+    </nav>
+
+    <main class="profile-main">
+        <p id="profile-message" class="profile-message" role="status" aria-live="polite" hidden></p>
+
+        <section class="profile-hero" aria-labelledby="profile-title">
+            <div class="profile-avatar-wrap">
+                <img id="profile-avatar" class="profile-avatar" alt="Profile picture" hidden>
+                <div id="profile-avatar-placeholder" class="profile-avatar-placeholder" aria-hidden="true">PB</div>
+                <label class="avatar-upload-label" for="profile-avatar-file">Change photo</label>
+                <input type="file" id="profile-avatar-file" name="profile-picture" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+            </div>
+            <div class="profile-identity">
+                <p class="profile-eyebrow">MY PROFILE</p>
+                <h1 id="profile-title">Your Profile</h1>
+                <p id="profile-display-name" class="profile-display-name"></p>
+                <p id="profile-display-email" class="profile-display-email"></p>
+                <button type="button" id="edit-profile-button" class="btn profile-action">Edit Profile</button>
+            </div>
+        </section>
+
+        <form id="profile-edit-form" class="profile-card profile-edit-card" hidden>
+            <div class="profile-card-heading">
+                <div><p class="profile-eyebrow">PERSONAL DETAILS</p><h2>Update Details</h2></div>
+                <button type="button" id="cancel-profile-edit" class="text-button">Cancel</button>
+            </div>
+            <div class="profile-form-grid">
+                <div class="form-group">
+                    <label for="profile-full-name">Full Name</label>
+                    <input id="profile-full-name" name="name" type="text" autocomplete="name" required minlength="2" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label for="profile-email">Email Address</label>
+                    <input id="profile-email" name="email" type="email" autocomplete="email" readonly>
+                    <small>Email changes are not available here.</small>
+                </div>
+                <div class="form-group">
+                    <label for="profile-phone">Phone Number</label>
+                    <input id="profile-phone" name="phone" type="tel" autocomplete="tel" placeholder="e.g. 0712 345 678">
+                    <small>Used for M-Pesa and order updates.</small>
+                </div>
+            </div>
+            <button type="submit" class="auth-submit profile-submit">Save Details</button>
+        </form>
+
+        <nav class="profile-shortcuts" aria-label="Profile sections">
+            <a href="#orders-section">My Orders</a>
+            <a href="#favorites-section">Favorites</a>
+            <a href="#addresses-section">Addresses</a>
+            <a href="#settings-section">Settings</a>
+        </nav>
+
+        <section class="profile-card account-card" aria-labelledby="account-info-title">
+            <div class="profile-card-heading">
+                <div><p class="profile-eyebrow">ACCOUNT</p><h2 id="account-info-title">Account Information</h2></div>
+                <button type="button" id="update-details-button" class="text-button">Update Details</button>
+            </div>
+            <dl class="profile-details">
+                <div><dt>Full Name</dt><dd id="account-name"></dd></div>
+                <div><dt>Email</dt><dd id="account-email"></dd></div>
+                <div><dt>Phone</dt><dd id="account-phone">Not added</dd></div>
+            </dl>
+        </section>
+
+        <section id="orders-section" class="profile-card" aria-labelledby="orders-title">
+            <div class="profile-card-heading"><div><p class="profile-eyebrow">ORDER HISTORY</p><h2 id="orders-title">My Orders</h2></div><a href="orders.html" class="text-button">Track Orders</a></div>
+            <div id="profile-orders" class="profile-list"><p class="profile-muted">Loading your orders…</p></div>
+        </section>
+
+        <section id="favorites-section" class="profile-card" aria-labelledby="favorites-title">
+            <div class="profile-card-heading"><div><p class="profile-eyebrow">YOUR PICKS</p><h2 id="favorites-title">Favorite Foods</h2></div></div>
+            <form id="favorite-form" class="profile-inline-form">
+                <label class="visually-hidden" for="favorite-food-select">Choose a food to add to favorites</label>
+                <select id="favorite-food-select" name="food_id" required><option value="">Choose a food to save</option></select>
+                <button type="submit" class="btn profile-action">Add Favorite</button>
+            </form>
+            <div id="profile-favorites" class="profile-list"><p class="profile-muted">Loading favorites…</p></div>
+        </section>
+
+        <section id="addresses-section" class="profile-card" aria-labelledby="addresses-title">
+            <div class="profile-card-heading"><div><p class="profile-eyebrow">DELIVERY DETAILS</p><h2 id="addresses-title">Saved Addresses</h2></div></div>
+            <form id="address-form" class="profile-edit-form">
+                <h3 id="address-form-title">Add an address</h3>
+                <div class="profile-form-grid">
+                    <div class="form-group"><label for="address-label">Address Name</label><input id="address-label" name="label" autocomplete="address-line1" placeholder="e.g. Hostel, Office" required maxlength="60"></div>
+                    <div class="form-group"><label for="address-location">Delivery Point</label><input id="address-location" name="delivery_location" autocomplete="address-line2" placeholder="e.g. Library entrance" required maxlength="255"></div>
+                    <div class="form-group"><label for="address-hostel">Hostel (optional)</label><input id="address-hostel" name="hostel" maxlength="50"></div>
+                    <div class="form-group"><label for="address-block">Block (optional)</label><input id="address-block" name="block" maxlength="50"></div>
+                    <div class="form-group"><label for="address-room">Room (optional)</label><input id="address-room" name="room" maxlength="20"></div>
+                </div>
+                <label class="remember-me address-default"><input id="address-default" name="is_default" type="checkbox"><span>Set as my default address</span></label>
+                <div class="profile-form-actions"><button type="submit" id="save-address-button" class="btn profile-action">Save Address</button><button type="button" id="cancel-address-edit" class="text-button" hidden>Cancel</button></div>
+            </form>
+            <div id="profile-addresses" class="profile-list"><p class="profile-muted">Loading addresses…</p></div>
+        </section>
+
+        <section id="settings-section" class="profile-card" aria-labelledby="settings-title">
+            <div class="profile-card-heading"><div><p class="profile-eyebrow">ACCOUNT SECURITY</p><h2 id="settings-title">Settings</h2></div></div>
+            <form id="password-form" class="profile-edit-form password-form">
+                <h3 id="password-form-title">Change Password</h3>
+                <p id="password-form-hint" class="profile-muted">Choose a new password for your account.</p>
+                <div class="profile-form-grid">
+                    <div class="form-group" id="current-password-group"><label for="current-password">Current Password</label><input id="current-password" name="current_password" type="password" autocomplete="current-password"></div>
+                    <div class="form-group"><label for="new-password">New Password</label><input id="new-password" name="new_password" type="password" autocomplete="new-password" minlength="6" required></div>
+                    <div class="form-group"><label for="confirm-new-password">Confirm New Password</label><input id="confirm-new-password" name="confirm_password" type="password" autocomplete="new-password" minlength="6" required></div>
+                </div>
+                <button type="submit" class="btn profile-action">Update Password</button>
+            </form>
+        </section>
+
+        <div class="profile-bottom-actions"><a href="orders.html" class="text-button">View all orders</a><button type="button" class="logout-button" onclick="handleLogout()">Log Out</button></div>
+    </main>
+
+    <footer><p>&copy; 2026 PwaniBite | Pwani University Canteen</p><p>Order Food • Hostel Delivery • Happy Comrades</p></footer>
+    <script src="script.js"></script>
+    <script src="profile.js"></script>
+</body>
+</html>

@@ -2,7 +2,8 @@
 <html lang="en">
 
 <head>
-
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    
     <meta charset="UTF-8">
 
     <meta name="viewport"
@@ -908,7 +909,7 @@
                     '<td>' + mealText + '</td>' +
                     '<td>' + esc(order.hostel || '—') + '</td>' +
                     '<td>KSh ' + Number(order.total_amount || 0).toLocaleString() + '</td>' +
-                    '<td><select class="status-select status ' + statusClass + '" data-order-id="' + order.order_id + '" onchange="adminUpdateOrderStatus(this)">' + options + '</select></td>' +
+                    '<td><select id="order-status-' + order.order_id + '" name="order_status_' + order.order_id + '" class="status-select status ' + statusClass + '" data-order-id="' + order.order_id + '" onchange="adminUpdateOrderStatus(this)">' + options + '</select></td>' +
                     '</tr>';
             });
             tbody.innerHTML = rows;
@@ -994,7 +995,7 @@
                     '<td>' + esc(u.email) + '</td>' +
                     '<td>' + esc(u.phone || '—') + '</td>' +
                     '<td>' + esc(u.hostel || '—') + '</td>' +
-                    '<td><select class="status-select" data-user-id="' + u.user_id + '" onchange="adminUpdateUserRole(this)">' + options + '</select></td>' +
+                    '<td><select id="user-role-' + u.user_id + '" name="user_role_' + u.user_id + '" class="status-select" data-user-id="' + u.user_id + '" onchange="adminUpdateUserRole(this)">' + options + '</select></td>' +
                     '</tr>';
             }).join('');
         }

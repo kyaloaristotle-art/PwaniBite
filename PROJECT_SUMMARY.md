@@ -1,5 +1,7 @@
 # Pwani Bite - Project Summary
 
+> **Note:** This document describes the original Express.js implementation. The Express backend in `backend/server.js` and `backend/routes/` is now **legacy reference only** — the active backend is Django REST Framework under `backend/django_api/`. See [README.md](README.md) and [backend/README.md](backend/README.md) for current setup and deployment guidance.
+
 ## Overview
 
 Pwani Bite is a complete full-stack web application for an online campus food ordering and delivery system designed for Pwani University. The system allows students, staff, and customers to browse menus, place orders, make payments via M-Pesa, and track deliveries to their hostel rooms.

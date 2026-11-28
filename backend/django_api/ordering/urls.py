@@ -27,7 +27,15 @@ def dual(route, view, name):
 urlpatterns = [path("", api_root, name="api-root")]
 urlpatterns += dual("auth/register", views.register, "auth-register")
 urlpatterns += dual("auth/login", views.login, "auth-login")
+urlpatterns += dual("auth/google/config", views.google_auth_config, "auth-google-config")
+urlpatterns += dual("auth/google", views.google_login, "auth-google-login")
 urlpatterns += dual("auth/me", views.current_user, "auth-me")
+urlpatterns += dual("auth/change-password", views.change_password, "auth-change-password")
+urlpatterns += dual("profile/avatar", views.profile_avatar_upload, "profile-avatar")
+urlpatterns += dual("profile/favorites", views.profile_favorites, "profile-favorites")
+urlpatterns += [path("profile/favorites/<int:food_id>", views.profile_favorite_detail, name="profile-favorite-detail")]
+urlpatterns += dual("profile/addresses", views.profile_addresses, "profile-addresses")
+urlpatterns += [path("profile/addresses/<int:address_id>", views.profile_address_detail, name="profile-address-detail")]
 urlpatterns += dual("users/delivery/list", views.delivery_users, "delivery-users")
 urlpatterns += dual("users", views.users_list, "users-list")
 urlpatterns += dual("users/<int:user_id>", views.user_detail, "user-detail")

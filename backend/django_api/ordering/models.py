@@ -6,12 +6,13 @@ class User(models.Model):
     user_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
     email = models.EmailField(max_length=100, unique=True)
-    phone = models.CharField(max_length=15, unique=True)
-    password = models.CharField(max_length=255)
+    phone = models.CharField(max_length=15, unique=True, null=True, blank=True)
+    password = models.CharField(max_length=255, null=True, blank=True)
     role = models.CharField(max_length=20, default="customer")
     hostel = models.CharField(max_length=50, null=True, blank=True)
     block = models.CharField(max_length=50, null=True, blank=True)
     room = models.CharField(max_length=20, null=True, blank=True)
+    avatar_url = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -43,6 +44,48 @@ class Food(models.Model):
     class Meta:
         managed = False
         db_table = "food"
+
+
+class UserOAuthAccount(models.Model):
+    oauth_account_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, db_column="user_id", on_delete=models.DO_NOTHING, related_name="oauth_accounts")
+    provider = models.CharField(max_length=30)
+    provider_user_id = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = "user_oauth_accounts"
+        unique_together = (("provider", "provider_user_id"),)
+
+
+class UserFavorite(models.Model):
+    favorite_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, db_column="user_id", on_delete=models.DO_NOTHING, related_name="favorites")
+    food = models.ForeignKey(Food, db_column="food_id", on_delete=models.DO_NOTHING)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = "user_favorites"
+        unique_together = (("user", "food"),)
+
+
+class UserAddress(models.Model):
+    address_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, db_column="user_id", on_delete=models.DO_NOTHING, related_name="addresses")
+    label = models.CharField(max_length=60)
+    delivery_location = models.CharField(max_length=255)
+    hostel = models.CharField(max_length=50, null=True, blank=True)
+    block = models.CharField(max_length=50, null=True, blank=True)
+    room = models.CharField(max_length=20, null=True, blank=True)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        managed = False
+        db_table = "user_addresses"
 
 
 class Order(models.Model):

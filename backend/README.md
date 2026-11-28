@@ -33,7 +33,7 @@ npm.cmd install
 npm.cmd run init-db
 ```
 
-The initializer uses the credentials in `backend/.env`. It creates the database and tables and inserts sample food and the default admin (`admin@pwanibite.com` / `password123`).
+The initializer uses the credentials in `backend/.env`. It creates the database and tables, inserts sample food, and creates the default admin (`admin@pwanibite.com`). The admin password is randomly generated during initialization and printed once in the console — save it, since it is never stored in plaintext.
 
 ## Install and start Django
 

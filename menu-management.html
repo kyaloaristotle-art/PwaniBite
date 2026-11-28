@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu Management | PwaniBite Admin</title>
@@ -136,7 +137,7 @@
 
             <div class="modal-body">
 
-                <form id="menu-form">
+                <form id="menu-form" autocomplete="off">
 
                     <input type="hidden" id="menu-item-id">
 
@@ -265,6 +266,46 @@
     <script src="script.js"></script>
     <script>
         let currentLoadedItems = [];
+        const defaultMenuImages = {
+            'tamarind juice': 'Images/Tamarind Juice.jpg',
+            'passion juice': 'Images/Passion Juice.jpg',
+            'mango juice': 'Images/Mango Juice.jpg',
+            'pineapple juice': 'Images/Pineapple Juice.jpg',
+            'hibiscus juice': 'Images/Hibiscus Juice.jpg',
+            'samosa': 'Images/Samosa.jpg',
+            'viazi karai': 'Images/viazi karai.jpg',
+            'donut': 'Images/Donus.jpg',
+            'donuts': 'Images/Donus.jpg',
+            'chapati': 'Images/Chapati.jpg',
+            'smocha': 'Images/Smocha.jpg',
+            'chips': 'Images/Chips.jpg',
+            'chips zege': 'Images/Chips Zege.jpg',
+            'chips zoge': 'Images/Chips Zege.jpg',
+            'chips kuku macha': 'Images/Chips Kuku Macha.jpg',
+            'boiled eggs': 'Images/boiled-egg.jpg',
+            'chai rangi': 'Images/Chai Rangi.jpg',
+            'chapati & beans offer': 'Images/Chapati Beans Offer.jpg',
+            'ugali & omena': 'Images/Ugali & Omena.jpg',
+            'ugali & mayai': 'Images/Ugali & Mayai.jpg',
+            'rice & beans': 'Images/Rice and Beans.jpg',
+            'smokie': 'Images/Smokie.jpg',
+            'kahawa': 'Images/Kahawa.jpg',
+            'milk tea': 'Images/Milk Tea.jpg',
+            'mineral water': 'Images/Mineral Water.jpg',
+            'pilau': 'Images/Pilau.jpg',
+            'chicken': 'Images/Chips Kuku Macha.jpg',
+            'beans': 'Images/Rice and Beans.jpg'
+        };
+
+        function getMenuImageSrc(item) {
+            const image = typeof item.image === 'string' ? item.image.trim() : '';
+            if (image) {
+                if (/^(https?:)?\/\//i.test(image) || image.startsWith('/')) return image;
+                return image.startsWith('Images/') ? image : 'Images/' + image.replace(/^\/+/, '');
+            }
+            const name = String(item.food_name || item.name || '').trim().toLowerCase();
+            return defaultMenuImages[name] || 'Images/Logo.jpg';
+        }
 
         document.addEventListener('DOMContentLoaded', async function() {
             if (typeof isAuthenticated === 'function' && typeof isAdmin === 'function') {
@@ -306,11 +347,11 @@
                 const name = item.food_name || item.name;
                 const price = parseFloat(item.price);
                 const isAvailable = item.availability !== false && item.availability !== 0;
-                const imageSrc = item.image ? (String(item.image).startsWith('Images/') ? item.image : 'Images/' + item.image) : 'Images/Logo.jpg';
+                const imageSrc = getMenuImageSrc(item);
 
                 html += `
                     <div class="menu-item-card">
-                        <img class="menu-item-photo" src="${esc(imageSrc)}" alt="${esc(name)}" onerror="this.src='Images/Logo.jpg'">
+                        <img class="menu-item-photo" src="${esc(imageSrc)}" alt="${esc(name)}" onerror="this.onerror=null;this.src='Images/Logo.jpg'">
                         <div class="menu-item-info">
                             <h3>${esc(name)}</h3>
                             <p>${esc(item.description || '')}</p>
@@ -416,8 +457,8 @@
                 document.getElementById('menu-image').value = '';
                 document.getElementById('menu-stock').value = item.stock_quantity ?? 0;
                 const preview = document.getElementById('menu-image-preview');
-                if (item.image) { preview.src = item.image.startsWith('Images/') ? item.image : 'Images/' + item.image; preview.hidden = false; }
-                else preview.hidden = true;
+                preview.src = getMenuImageSrc(item);
+                preview.hidden = false;
                 const categorySelect = document.getElementById('menu-category');
                 const itemCategory = item.category || 'Main Dishes';
                 if (![...categorySelect.options].some(option => option.value === itemCategory)) {
@@ -468,7 +509,7 @@
             align-items: center;
         }
 
-        .menu-item-photo { width: 112px; height: 96px; object-fit: cover; border-radius: 8px; flex: 0 0 auto; }
+        .menu-item-photo { width: 160px; height: 128px; object-fit: cover; border-radius: 8px; flex: 0 0 auto; }
         #menu-image-preview { display:block; width:100%; max-height:180px; object-fit:cover; border-radius:8px; margin-top:10px; }
         #menu-image-preview[hidden] { display:none; }
 
@@ -479,7 +520,7 @@
 
         @media (max-width: 650px) {
             .menu-item-card { flex-wrap: wrap; align-items: flex-start; }
-            .menu-item-photo { width: 82px; height: 76px; }
+            .menu-item-photo { width: 112px; height: 92px; }
             .menu-item-info { flex:1; min-width: 160px; }
             .menu-item-actions { width:100%; }
         }

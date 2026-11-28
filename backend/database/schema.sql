@@ -12,17 +12,47 @@ CREATE TABLE IF NOT EXISTS users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    phone VARCHAR(15) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(15) UNIQUE NULL,
+    password VARCHAR(255) NULL,
     role ENUM('customer', 'admin', 'delivery', 'staff') DEFAULT 'customer',
     hostel VARCHAR(50),
     block VARCHAR(50),
     room VARCHAR(20),
+    avatar_url VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_email (email),
     INDEX idx_phone (phone),
     INDEX idx_role (role)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- LINKED SOCIAL SIGN-IN ACCOUNTS
+-- ============================================
+CREATE TABLE IF NOT EXISTS user_oauth_accounts (
+    oauth_account_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    provider VARCHAR(30) NOT NULL,
+    provider_user_id VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_provider_account (provider, provider_user_id),
+    INDEX idx_oauth_user (user_id),
+    CONSTRAINT fk_oauth_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_addresses (
+    address_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    label VARCHAR(60) NOT NULL,
+    delivery_location VARCHAR(255) NOT NULL,
+    hostel VARCHAR(50) NULL,
+    block VARCHAR(50) NULL,
+    room VARCHAR(20) NULL,
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_address_user (user_id),
+    CONSTRAINT fk_address_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
@@ -41,6 +71,16 @@ CREATE TABLE IF NOT EXISTS food (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_category (category),
     INDEX idx_availability (availability)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_favorites (
+    favorite_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    food_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_favorite (user_id, food_id),
+    CONSTRAINT fk_favorite_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    CONSTRAINT fk_favorite_food FOREIGN KEY (food_id) REFERENCES food(food_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
@@ -146,6 +186,8 @@ CREATE TABLE IF NOT EXISTS feedback (
 -- ============================================
 -- INSERT DEFAULT ADMIN USER
 -- ============================================
+-- NOTE: init.js replaces this seeded password with a randomly generated one
+-- after running the schema, so 'password123' is never usable on a real database.
 INSERT INTO users (name, email, phone, password, role) VALUES
 ('Admin User', 'admin@pwanibite.com', '0712345678', '$2a$10$Ex1E0sWZ6If8Q3gh97BnRuQSJpJcH2bfnRggvZo0vFE.BoUIHfD3m', 'admin');
 

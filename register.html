@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register | PwaniBite</title>
+    <title>Sign Up | PwaniBite</title>
     <link rel="stylesheet" href="style.css">
     <script src="api.js"></script>
 </head>
@@ -36,10 +37,10 @@
     <!-- Register Header -->
     <section class="auth-header">
 
-        <h1>Create Your Account</h1>
+        <h1>Create Account</h1>
 
         <p>
-            Join PwaniBite to order food and track your deliveries
+            Join PwaniBite and discover delicious meals.
         </p>
 
     </section>
@@ -49,9 +50,9 @@
 
         <div class="auth-container">
 
-            <h2>Register</h2>
+            <h2 id="register-heading">Create Account</h2>
 
-            <form id="registerForm" aria-labelledby="register-heading">
+            <form id="registerForm" aria-labelledby="register-heading" novalidate>
 
                 <div class="form-group">
 
@@ -66,6 +67,7 @@
                         placeholder="Enter your full name"
                         required
                         aria-required="true"
+                        autocomplete="name"
                         aria-describedby="register-name-help"
                     >
                     <span id="register-name-help" class="error-message">Please enter your name</span>
@@ -86,71 +88,11 @@
                         required
                         aria-required="true"
                         aria-describedby="register-email-help"
+                        autocomplete="email"
+                        autocapitalize="none"
+                        spellcheck="false"
                     >
                     <span id="register-email-help" class="error-message">Please enter a valid email</span>
-
-                </div>
-
-                <div class="form-group">
-
-                    <label for="register-phone">
-                        Phone Number
-                    </label>
-
-                    <input
-                        type="tel"
-                        id="register-phone"
-                        name="phone"
-                        placeholder="e.g. 0712345678"
-                        required
-                        aria-required="true"
-                        aria-describedby="register-phone-help"
-                        pattern="^(07|01)[0-9]{8}$"
-                    >
-                    <span id="register-phone-help" class="error-message">Please enter a valid Kenyan phone number</span>
-
-                </div>
-
-                <div class="form-group">
-
-                    <label for="register-hostel">
-                        Hostel
-                    </label>
-
-                    <select
-                        id="register-hostel"
-                        name="hostel"
-                        required
-                        aria-required="true"
-                        aria-describedby="register-hostel-help"
-                    >
-
-                        <option value="">
-                            -- Select Hostel --
-                        </option>
-
-                        <option value="Kijani Hostel">
-                            Kijani Hostel
-                        </option>
-
-                        <option value="Mwangaza Hostel">
-                            Mwangaza Hostel
-                        </option>
-
-                        <option value="Bahari Hostel">
-                            Bahari Hostel
-                        </option>
-
-                        <option value="Pwani Hostel">
-                            Pwani Hostel
-                        </option>
-
-                        <option value="Umoja Hostel">
-                            Umoja Hostel
-                        </option>
-
-                    </select>
-                    <span id="register-hostel-help" class="error-message">Please select your hostel</span>
 
                 </div>
 
@@ -164,10 +106,12 @@
                         type="password"
                         id="register-password"
                         name="password"
-                        placeholder="Create a password (min 6 characters)"
+                        placeholder="Create a password (at least 6 characters)"
                         required
                         aria-required="true"
                         aria-describedby="register-password-help"
+                        autocomplete="new-password"
+                        minlength="6"
                     >
                     <span id="register-password-help" class="error-message">Password must be at least 6 characters</span>
 
@@ -187,6 +131,7 @@
                         required
                         aria-required="true"
                         aria-describedby="register-confirm-password-help"
+                        autocomplete="new-password"
                     >
                     <span id="register-confirm-password-help" class="error-message">Passwords do not match</span>
 
@@ -196,14 +141,26 @@
                     type="submit"
                     class="auth-submit"
                 >
-                    Register
+                    CREATE ACCOUNT
                 </button>
 
             </form>
 
+            <p id="register-feedback" class="login-feedback" role="status" aria-live="polite" hidden></p>
+
+            <div class="auth-divider" aria-hidden="true"><span>or continue with</span></div>
+            <div class="google-auth-control">
+                <button type="button" class="social-auth-button" id="google-signup" aria-describedby="social-signup-note">
+                    <span class="google-mark" aria-hidden="true">G</span>
+                    <span>Continue with Google</span>
+                </button>
+                <div id="google-gis-button" class="google-gis-button" hidden></div>
+            </div>
+            <p id="social-signup-note" class="social-auth-note">Google sign-in needs to be connected before it can be used.</p>
+
             <div class="auth-switch">
                 <p>Already have an account?</p>
-                <a href="login.html" class="btn">Login</a>
+                <a href="login.html" class="btn">Log In</a>
             </div>
 
         </div>
@@ -224,14 +181,15 @@
     </footer>
 
     <script src="script.js"></script>
+    <script src="google-auth.js"></script>
     <script>
-        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        const registerFeedback = document.getElementById('register-feedback');
+        const registerForm = document.getElementById('registerForm');
+        registerForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const name = document.getElementById('register-name').value.trim();
             const email = document.getElementById('register-email').value.trim();
-            const phone = document.getElementById('register-phone').value.trim();
-            const hostel = document.getElementById('register-hostel').value;
             const password = document.getElementById('register-password').value;
             const confirmPassword = document.getElementById('register-confirm-password').value;
             
@@ -250,23 +208,6 @@
                 return;
             } else {
                 clearError('register-email', 'register-email-help');
-            }
-            
-            // Validate phone
-            const phoneRegex = /^(07|01)[0-9]{8}$/;
-            if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
-                showError('register-phone', 'register-phone-help');
-                return;
-            } else {
-                clearError('register-phone', 'register-phone-help');
-            }
-            
-            // Validate hostel
-            if (!hostel) {
-                showError('register-hostel', 'register-hostel-help');
-                return;
-            } else {
-                clearError('register-hostel', 'register-hostel-help');
             }
             
             // Validate password
@@ -288,26 +229,26 @@
             // Show loading state
             const submitBtn = this.querySelector('button[type="submit"]');
             const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Registering...';
+            submitBtn.textContent = 'Creating account...';
             submitBtn.disabled = true;
+            registerFeedback.textContent = 'Creating your account…';
+            registerFeedback.hidden = false;
             
             try {
                 // Call API register
                 const userData = {
                     name: name,
                     email: email,
-                    phone: phone,
-                    hostel: hostel,
-                    password: password
+                    password: password,
+                    confirm_password: confirmPassword
                 };
                 
                 await register(userData);
                 
-                // Registration successful
+                registerFeedback.textContent = 'Your account is ready. Taking you to your next step…';
                 window.location.href = getPostAuthRedirect();
             } catch (error) {
-                // Registration failed
-                alert('Registration failed: ' + error.message);
+                registerFeedback.textContent = error.message || 'We could not create your account. Please try again.';
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
             }
